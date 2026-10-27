@@ -1,0 +1,2 @@
+Integrante;Período;Tipo de contribuição;Item/RF/UC/atividade;Descrição objetiva;Artefato/caminho;Evidência (commit/PR/teste/ata/validação);Colaboração;Estado/resultado;Observações
+EXEMPLO-FICTICIO;2º semestre 2026;Implementação e documentação;RF-007 / UC-004;Fluxo de registro de pedido;backend/pedidos/ e docs/testes/;PR fictício #12 e roteiro de teste;Revisado em dupla;Parcial — aceite do cliente pendente;Remover ou substituir esta linha no registro real

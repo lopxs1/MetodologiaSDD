@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: API [Nome do Recurso]
+  description: Contrato de API para a funcionalidade SPEC-XXX seguindo a metodologia SDD.
+  version: 1.0.0
+paths:
+  /api/v1/recurso:
+    get:
+      summary: Listar recursos
+      responses:
+        '200':
+          description: Sucesso na recuperação da lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecursoResponse'
+    post:
+      summary: Criar novo recurso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriarRecursoRequest'
+      responses:
+        '201':
+          description: Recurso criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecursoResponse'
+        '400':
+          description: Requisição inválida
+components:
+  schemas:
+    CriarRecursoRequest:
+      type: object
+      required:
+        - campo_obrigatorio
+      properties:
+        campo_obrigatorio:
+          type: string
+          example: "Exemplo de dado"
+    RecursoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        campo_obrigatorio:
+          type: string
+        criado_em:
+          type: string
+          format: date-time

@@ -1,0 +1,2 @@
+ID;Tipo;Título;Descrição/necessidade;Prioridade;Estado;Critério de aceite;Origem/justificativa;Dependências;Versão-alvo;Observações
+EXEMPLO-FICTICIO;Funcionalidade;Registrar pedido de material;Funcionário autorizado solicita itens para seu setor;Alta;A validar;Pedido recebe identificador e estado inicial quando usuário autorizado informa quantidade positiva e confirma;Necessidade hipotética da Escola Exemplo;Cadastro de materiais;v0.2;Remover ou substituir esta linha ao criar o backlog real

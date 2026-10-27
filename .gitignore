@@ -1,0 +1,51 @@
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Dados locais e arquivos de usuário
+data/private/
+uploads/
+*.sqlite
+*.db
+
+# Arquivos temporários e de bloqueio do Microsoft Office / Word
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.pptx
+*.tmp
+*.bak
+
+# Python
+__pycache__/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Java / build
+target/
+build/
+
+# JavaScript / frontend
+node_modules/
+dist/
+.next/
+.vite/
+
+# .NE
+bin/
+obj/
+
+# IDE e sistema operacional
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Exemplo: `.env` e `secrets/chave-local.pem` ficam ignorados; `.env.example` pode ser versionado sem valores secretos.
