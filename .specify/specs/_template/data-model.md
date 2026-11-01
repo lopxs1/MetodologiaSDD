@@ -1,71 +1,97 @@
 # Delta do Modelo de Dados: [Nome da Funcionalidade]
 
 > **ID da Spec:** `SPEC-XXX`  
-> **Status:** [Rascunho | Aprovado | Aplicado]  
-> **Foco:** **O que esta funcionalidade cria ou altera (Delta)**  
-> **Modelo Global:** Relacionado com [domain-model.md](../../memory/domain-model.md)
+> **Status:** [Planejado | Aprovado | Aplicado via Migration]  
+> **Referência Funcional:** [spec.md](spec.md)  
+> **Modelo Conceitual Global:** [domain-model.md](../../memory/domain-model.md)  
+> **Foco:** **O que esta funcionalidade cria ou altera no banco de dados (Delta)**
 
 ---
 
-## 1. Resumo do Delta
+## 1. Mapeamento Conceitual ➔ Materialização Lógica
 
-Descreva sucintamente quais objetos de banco de dados são impactados por esta especificação.
+> Esta seção evidencia a derivação obrigatória do Modelo Conceitual (`domain-model.md`) para o Modelo Lógico, garantindo rastreabilidade e prevenindo divergências silenciosas.
 
-| Tipo de Alteração | Objeto / Tabela | Descrição da Modificação |
+| Elemento Conceitual (DER) | Materialização Lógica (Tabela / Coluna / Constraint) | Alocação da Regra (Banco vs. Aplicação) | Justificativa / Rastreabilidade |
+|---|---|---|---|
+| `[Ex: ENTIDADE_A]` | Tabela `entidade_a` (PK `id UUID`) | Banco de Dados | Derivada de `domain-model.md` para atender ao RF-01 |
+| `[Ex: Relacionamento A ➔ B]` | Coluna `entidade_a_id UUID FK` | Banco de Dados | Chave estrangeira com índice de busca |
+| `[Ex: Restrição de Conflito]` | Consulta temporal com bloqueio transacional | Aplicação (Service / Repository) | Regra RN-XX validada via código antes do `INSERT` |
+
+---
+
+## 2. Origem das Decisões do Modelo
+
+- **Definido explicitamente na Spec:** [Liste os atributos e regras extraídos diretamente do `spec.md`]
+- **Derivado das convenções da Constituição:** [Ex.: Chaves primárias, colunas `criado_em`/`atualizado_em`, convenção `snake_case`, soft delete]
+- **Suposições da IA com Justificativa:** [Liste qualquer tipo de dado ou tamanho sugerido pela IA para validação humana]
+
+---
+
+## 3. Resumo e Diagrama do Delta
+
+### 3.1. Resumo das Alterações
+| Tipo de Operação | Objeto / Tabela | Modificação Detalhada |
 |---|---|---|
-| **Criação / Alteração / Exclusão** | `nome_da_tabela` | [Resumo da mudança, novos campos ou constraints] |
+| `CREATE TABLE` / `ALTER TABLE` | `nome_da_tabela` | [Novas colunas, constraints `UNIQUE`, índices ou foreign keys] |
 
----
-
-## 2. Diagrama do Delta
-
+### 3.2. Diagrama do Delta em Mermaid
 ```mermaid
 erDiagram
-    TABELA_EXEMPLO {
-        uuid id PK "Chave primária"
-        varchar(100) campo_obrigatorio "Descrição do campo"
-        timestamp criado_em "Timestamp de criação"
+    TABELA_DELTA {
+        uuid id PK "Identificador único"
+        string campo_obrigatorio "Descrição do campo"
+        boolean ativo "Controle de exclusão lógica"
+        datetime criado_em "Timestamp com timezone"
+        datetime atualizado_em "Timestamp com timezone"
     }
 ```
 
 ---
 
-## 3. Dicionário de Dados do Delta
+## 4. Dicionário de Dados do Delta
 
 ### Tabela: `nome_da_tabela`
 
-| Coluna | Tipo | Nulo? | Padrão | Restrições / Chaves | Descrição |
+| Coluna | Tipo SQL | Nulo? | Padrão | Restrições / Chaves | Descrição / Sensibilidade LGPD |
 |---|---|---|---|---|---|
-| `id` | `UUID` | Não | `gen_random_uuid()` | PK | Identificador único |
-| `exemplo_coluna` | `VARCHAR(100)` | Não | - | `UNIQUE` | Explicação da regra e conteúdo |
-| `criado_em` | `TIMESTAMP` | Não | `CURRENT_TIMESTAMP` | - | Data de registro |
+| `id` | `INTEGER` / `UUID` | Não | Auto / Random | `PK` | Identificador único |
+| `exemplo_campo` | `VARCHAR(150)` | Não | - | `UNIQUE` | E-mail ou dado de negócio |
+| `ativo` | `BOOLEAN` | Não | `TRUE` | - | Flag para soft delete |
+| `criado_em` | `TIMESTAMPTZ` | Não | `CURRENT_TIMESTAMP` | - | Auditoria temporal de criação |
+| `atualizado_em` | `TIMESTAMPTZ` | Não | `CURRENT_TIMESTAMP` | - | Auditoria temporal de alteração |
 
 ---
 
-## 4. Scripts de Migração (SQL DDL)
+## 5. Scripts de Migração Incremental (Liquibase / SQL)
 
-### 4.1. Migração UP (Aplicação)
+### 5.1. Migração UP (Aplicação do Esquema)
 ```sql
--- Script de migração para criar/alterar tabelas
-CREATE TABLE IF NOT EXISTS tabela_exemplo (
-    id VARCHAR(36) PRIMARY KEY,
-    exemplo_coluna VARCHAR(100) NOT NULL,
-    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- Liquibase formatted SQL
+-- changeset equipe:SPEC-XXX-01-criar-tabela-delta
+CREATE TABLE IF NOT EXISTS nome_da_tabela (
+    id SERIAL PRIMARY KEY,
+    exemplo_campo VARCHAR(150) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_exemplo_campo UNIQUE (exemplo_campo)
 );
+
+CREATE INDEX IF NOT EXISTS idx_nome_tabela_busca ON nome_da_tabela(exemplo_campo);
 ```
 
-### 4.2. Migração DOWN (Rollback)
+### 5.2. Migração DOWN (Reversão / Rollback Seguro)
 ```sql
--- Script para reverter as alterações com segurança
-DROP TABLE IF EXISTS tabela_exemplo;
+-- rollback DROP TABLE IF EXISTS nome_da_tabela CASCADE;
 ```
 
 ---
 
-## 5. Massa de Dados Sintética para Testes (Seeds)
+## 6. Dados Sintéticos para Testes e Validação (Seeds)
 
 ```sql
--- Inserções com dados fictícios para validação em ambiente local
-INSERT INTO tabela_exemplo (id, exemplo_coluna)
-VALUES ('b0000000-0000-0000-0000-000000000001', 'Exemplo sintético de teste');
+-- Massa de dados fictícia respeitando estritamente a LGPD
+INSERT INTO nome_da_tabela (id, exemplo_campo, ativo)
+VALUES (1, 'amostra.sintetica@amde.org.br', TRUE);
 ```
