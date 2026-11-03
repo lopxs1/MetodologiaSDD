@@ -84,8 +84,8 @@ classDiagram
         -LocalDateTime dataHora
     }
 
-    Usuario <|-- Funcionario : Especialização 1:1
-    Usuario <|-- Paciente : Especialização 1:1
+    Usuario <|-- Funcionario : Especialização
+    Usuario <|-- Paciente : Especialização
     Usuario "1" --> "1" NivelAcesso : possui
 
     Paciente "1" o-- "0..*" RegistroProntuario : possui documentos
