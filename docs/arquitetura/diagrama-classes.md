@@ -98,8 +98,6 @@ classDiagram
 
     Usuario "1" --> "0..*" LogAuditoria : gera registro
 ```
-
 <div align="center">
-<sub><b>Fonte:</b> Autores (Monografia AMDE Digital / Fatec Sorocaba).</sub>
-</div>
-
+    <sub><b>Fonte:</b> Autores (Monografia AMDE Digital / Fatec Sorocaba).</sub>
+</div> 
