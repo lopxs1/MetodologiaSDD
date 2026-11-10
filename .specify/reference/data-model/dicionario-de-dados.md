@@ -52,7 +52,17 @@ Extensão de dados clínicos das crianças e adolescentes atendidos pela AMDE.
 
 ---
 
-### 4. Tabela: `registro_prontuario`
+### 4. Tabela: `categoria`
+Classificação cadastral dos documentos do prontuário eletrônico.
+
+| Coluna | Tipo | Nulo? | Restrições | Descrição |
+|---|---|---|---|---|
+| `id_categoria` | `SERIAL` | Não | `PK` | Identificador da categoria |
+| `nome` | `VARCHAR(50)` | Não | `UNIQUE` | `Exames`, `Laudos`, `Receituario`, `Arquivado` |
+
+---
+
+### 5. Tabela: `registro_prontuario`
 Metadados e referências dos arquivos em PDF de prontuários, exames e laudos.
 
 | Coluna | Tipo | Nulo? | Restrições | Descrição |
@@ -69,24 +79,24 @@ Metadados e referências dos arquivos em PDF de prontuários, exames e laudos.
 
 ---
 
-### 5. Tabela: `agendamentos` e `agenda_paciente`
+### 6. Tabelas: `agendamentos` e `agenda_paciente`
 Gerenciamento de agenda, disponibilidade de horários e presença.
 
 | Tabela | Colunas Principais | Restrições | Papel |
 |---|---|---|---|
-| `agendamentos` | `id_agenda` (PK), `id_funcionario` (FK), `data_inicio`, `data_final`, `tipo_agendamento`, `status`, `presenca_funcionario` | `CHECK(data_inicio < data_final)` | Sessão clínica do profissional |
+| `agendamentos` | `id_agenda` (PK), `id_funcionario` (FK), `data_inicio`, `data_final`, `tipo_agendamento` (`VARCHAR(30)`), `status` (`VARCHAR(20)`), `presenca_funcionario` | `CHECK(data_inicio < data_final)`, `CHECK` em `tipo_agendamento` (`Consulta`, `Exame`, `Retorno`, `Avaliacao`, `Terapia`), `CHECK` em `status` (`Agendado`, `Concluido`, `Cancelado`) | Sessão clínica do profissional |
 | `agenda_paciente` | `id_agenda_paciente` (PK), `id_agenda` (FK), `id_paciente` (FK), `presenca_paciente` | `UNIQUE(id_agenda, id_paciente)` | Associativa de presença do paciente |
 
 ---
 
-### 6. Tabela: `log_auditoria`
+### 7. Tabela: `log_auditoria`
 Trilha de auditoria das operações de dados sensíveis e acessos clínicos (LGPD / CFM).
 
 | Coluna | Tipo | Nulo? | Restrições | Descrição |
 |---|---|---|---|---|
 | `id_log` | `SERIAL` | Não | `PK` | Identificador do log |
 | `id_usuario` | `INT` | Não | `FK -> usuario.id_usuario` | Usuário responsável |
-| `acao` | `VARCHAR(50)` | Não | - | `LOGIN`, `UPLOAD_PRONTUARIO`, `DOWNLOAD`, `EXCLUSAO` |
+| `acao` | `VARCHAR(50)` | Não | `CHECK` | `LOGIN`, `UPLOAD`, `DOWNLOAD`, `EXCLUSAO`, `AGENDAMENTO` |
 | `recurso` | `VARCHAR(100)` | Não | - | Identificador do registro acessado |
 | `ip` | `VARCHAR(45)` | Sim | - | Endereço IP de origem |
 | `data_hora` | `TIMESTAMPTZ` | Não | `CURRENT_TIMESTAMP` | Timestamp do evento |

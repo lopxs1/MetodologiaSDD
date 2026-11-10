@@ -16,6 +16,38 @@ classDiagram
         PACIENTE
     }
 
+    class GrauSuporte {
+        <<enumeration>>
+        NIVEL_1
+        NIVEL_2
+        NIVEL_3
+    }
+
+    class TipoAgendamento {
+        <<enumeration>>
+        CONSULTA
+        EXAME
+        RETORNO
+        AVALIACAO
+        TERAPIA
+    }
+
+    class StatusAgendamento {
+        <<enumeration>>
+        AGENDADO
+        CONCLUIDO
+        CANCELADO
+    }
+
+    class AcaoAuditoria {
+        <<enumeration>>
+        LOGIN
+        UPLOAD
+        DOWNLOAD
+        EXCLUSAO
+        AGENDAMENTO
+    }
+
     class Usuario {
         -Long idUsuario
         -String nome
@@ -43,7 +75,7 @@ classDiagram
     class Paciente {
         -Long idPaciente
         -String descPaciente
-        -String grauSuporte
+        -GrauSuporte grauSuporte
     }
 
     class Categoria {
@@ -65,8 +97,8 @@ classDiagram
         -Long idAgenda
         -LocalDateTime dataInicio
         -LocalDateTime dataFinal
-        -String tipoAgendamento
-        -String status
+        -TipoAgendamento tipoAgendamento
+        -StatusAgendamento status
         -Boolean presencaFuncionario
         +verificarConflito(inicio, fim) Boolean
     }
@@ -78,7 +110,7 @@ classDiagram
 
     class LogAuditoria {
         -Long idLog
-        -String acao
+        -AcaoAuditoria acao
         -String recurso
         -String ip
         -LocalDateTime dataHora
@@ -87,16 +119,20 @@ classDiagram
     Usuario <|-- Funcionario : Especialização
     Usuario <|-- Paciente : Especialização
     Usuario "1" --> "1" NivelAcesso : possui
+    Paciente "1" --> "1" GrauSuporte : possui
 
     Paciente "1" o-- "0..*" RegistroProntuario : possui documentos
     Categoria "1" o-- "0..*" RegistroProntuario : categoriza
     RegistroProntuario "0..1" --> "0..1" RegistroProntuario : idRegistroSubstituido
 
     Funcionario "1" o-- "0..*" Agendamento : conduz sessões
+    Agendamento "1" --> "1" TipoAgendamento : classifica
+    Agendamento "1" --> "1" StatusAgendamento : possui
     Agendamento "1" *-- "1..*" AgendaPaciente : agendado para
     Paciente "1" o-- "0..*" AgendaPaciente : participa de
 
     Usuario "1" --> "0..*" LogAuditoria : gera registro
+    LogAuditoria "1" --> "1" AcaoAuditoria : registra
 ```
 <div align="center">
     <sub><b>Fonte:</b> Autores (Monografia AMDE Digital / Fatec Sorocaba).</sub>
