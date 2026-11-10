@@ -55,7 +55,7 @@ Liste cenários executados separadamente por plataforma, emulador ou dispositivo
 - **Backend/API:** [`backend/README.md`](../backend/README.md), se existir.
 - **Interface web:** [`frontend/README.md`](../frontend/README.md), se existir.
 - **Execução integrada/implantação:** [`application/README.md`](../application/README.md), se existir.
-- **Requisitos, protótipos e testes:** [`docs/README.md`](../docs/README.md).
+- **Requisitos, design e especificações:** [`.specify/`](../.specify/README.md).
 
 ## Exemplo preenchido (fictício; stack ilustrativa)
 

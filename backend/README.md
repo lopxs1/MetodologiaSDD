@@ -45,10 +45,11 @@ Link para OpenAPI/contrato: [caminho ou N/A]. Descreva autenticação, autoriza�
 
 ## Vínculo com a Documentação Acadêmica (TG)
 
-- **Modelagem de Dados e DER (Cap. 2.5):** [`docs/der/`](../docs/der/README.md)
-- **Diagrama de Classes e Arquitetura (Cap. 2.5):** [`docs/arquitetura/`](../docs/arquitetura/README.md)
-- **Plano de Testes e Evidências (Cap. 4):** [`docs/testes/`](../docs/testes/README.md)
-- **Documentação do projeto:** [`docs/README.md`](../docs/README.md)
+- **Modelo de dados e DER:** [DER](../.specify/reference/data-model/der.md) e [dicionário de dados](../.specify/reference/data-model/dicionario-de-dados.md).
+- **Arquitetura:** [visão arquitetural](../.specify/reference/architecture/visao-arquitetural.md) e [diagrama de classes](../.specify/reference/architecture/diagrama-classes.md).
+- **Requisitos:** [especificação de requisitos](../.specify/reference/requirements/especificacao-requisitos.md).
+- **Planejamento de testes:** consulte as tarefas da especificação da funcionalidade em `.specify/specs/`.
+- **Monografia de referência:** [PDF](../.specify/reference/references/monografia-amde-digital.pdf).
 
 ## Exemplo preenchido (fictício; comandos dependem do projeto)
 

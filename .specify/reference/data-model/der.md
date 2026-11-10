@@ -1,7 +1,7 @@
 # Diagrama de Entidade-Relacionamento (DER) — AMDE Digital
 
 > **Referência Acadêmica:** Capítulo 4.3 da Monografia  
-> **Modelo Conceitual Global SDD:** [`.specify/memory/domain-model.md`](../../.specify/memory/domain-model.md)  
+> **Modelo Conceitual Global SDD:** [`memory/domain-model.md`](../../memory/domain-model.md)
 > **SGBD:** PostgreSQL 16 (Relacional ACID)
 
 ---

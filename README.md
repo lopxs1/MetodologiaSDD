@@ -58,18 +58,19 @@ O projeto adota uma separação estrita entre a memória global, os pacotes incr
 │   │   └── design-system.md            # Diretrizes visuais, acessibilidade WCAG e UI
 │   ├── design/
 │   │   └── tokens.json                 # Design tokens legíveis por máquina
+│   ├── reference/                      # Base consolidada de requisitos, arquitetura e dados
+│   │   ├── requirements/               # Requisitos funcionais e não funcionais
+│   │   ├── architecture/               # Visão arquitetural e diagrama de classes
+│   │   ├── data-model/                 # DER e dicionário de dados
+│   │   └── references/                 # Monografia de referência
 │   └── specs/                          # Especificações incrementais por funcionalidade
-│       └── _template/                  # Template base para novas specs (spec, plan, data-model, tasks)
-├── docs/                               # Documentação acadêmica institucional (Fatec)
-│   ├── TG-Template-ADS-formato-academico 1-v1.docx
-│   ├── requisitos/                     # Rastreabilidade de requisitos
-│   ├── der/                            # Modelagem conceitual e lógica
-│   ├── arquitetura/                    # Visões arquiteturais e diagramas
-│   └── decisoes/                       # Registros de Decisão Arquitetural (ADRs)
+│       └── _template/                  # Template base para novas specs
 ├── backend/                            # Código-fonte da API Spring Boot
 ├── frontend/                           # Código-fonte da aplicação Web React
 └── mobile/                             # Código-fonte do aplicativo mobile (quando aplicável)
 ```
+
+Os artefatos de engenharia antes mantidos em `docs/` agora ficam centralizados em [`.specify/reference/`](.specify/reference/). Templates genéricos e exemplos fictícios foram removidos.
 
 ---
 

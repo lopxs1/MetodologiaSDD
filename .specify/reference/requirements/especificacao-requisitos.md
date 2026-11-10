@@ -4,7 +4,7 @@
 > **Versão:** 1.0.0  
 > **Data:** 2026-11-01  
 > **Base Documental:** Monografia AMDE Digital (Dezembro/2025) / Fatec Sorocaba  
-> **Metodologia SDD:** Especificação detalhada em [`.specify/`](../../.specify/README.md)
+> **Metodologia SDD:** Especificação detalhada em [`.specify/`](../../README.md)
 
 ---
 

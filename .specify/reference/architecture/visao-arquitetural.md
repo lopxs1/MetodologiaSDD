@@ -2,7 +2,7 @@
 
 > **Referência Acadêmica:** Capítulo 4.1 e 4.2 da Monografia  
 > **Padrão:** Monólito Modular em Camadas com Front-end Desacoplado (SPA)  
-> **Controle de Engenharia:** Spec-Driven Development ([`.specify/`](../../.specify/README.md))
+> **Controle de Engenharia:** Spec-Driven Development ([`.specify/`](../../README.md))
 
 ---
 

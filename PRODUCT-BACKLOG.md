@@ -34,7 +34,7 @@ Não marque como validado algo apenas porque foi planejado, codificado ou demons
 
 ## Refinamento e histórico
 
-Divida itens grandes quando isso ajudar a estimar, implementar ou validar o trabalho. Registre dúvidas como pendências, em vez de inventar regras. Decisões que alterem escopo ou prioridade podem ser documentadas em [`docs/decisoes/`](docs/decisoes/README.md).
+Divida itens grandes quando isso ajudar a estimar, implementar ou validar o trabalho. Registre dúvidas como pendências, em vez de inventar regras. Decisões que alterem escopo ou prioridade podem ser registradas em `.specify/decisions/` quando esse histórico for iniciado.
 
 | Data | Item alterado | Alteração/decisão | Motivo ou origem |
 |---|---|---|---|

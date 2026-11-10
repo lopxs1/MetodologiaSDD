@@ -17,6 +17,11 @@ O objetivo fundamental do SDD é garantir que **nenhuma linha de código de prod
 │   └── design-system.md                # Diretrizes de UI/UX, acessibilidade (WCAG) e tokens
 ├── design/
 │   └── tokens.json                     # Design Tokens formais (cores, tipografia, espaçamentos)
+├── reference/                           # Base consolidada herdada da documentação do projeto
+│   ├── requirements/                    # Requisitos funcionais e não funcionais
+│   ├── architecture/                    # Visão arquitetural e diagrama de classes
+│   ├── data-model/                       # DER e dicionário de dados
+│   └── references/                      # Monografia de referência
 └── specs/                              # Pacotes incrementais de especificação por funcionalidade
     ├── _template/                      # Modelo base obrigatório para novas especificações
     │   ├── spec.md                     # O quê e por quê (RFs, RNFs ISO 25010, RNs e BDD)
@@ -26,13 +31,9 @@ O objetivo fundamental do SDD é garantir que **nenhuma linha de código de prod
     │   │   ├── README.md
     │   │   └── api-contract.yaml
     │   └── tasks.md                    # Checklist acionável de execução por fases
-    ├── 001-autenticacao-e-usuarios/     # RF01, RF02, UC01-UC07, RN01-RN04
-    ├── 002-gestao-de-pacientes/        # RF03, UC08-UC09, RN04
-    ├── 003-prontuarios-e-anexos/       # RF04, UC10-UC13, RN05-RN10
-    ├── 004-agendamentos-e-consultas/   # RF05, UC14-UC19, RN11-RN15
-    ├── 005-auditoria-e-seguranca/      # RF06, UC20, RN16
-    └── 006-dashboard-gerencial/        # RF07, UC21
 ```
+
+Os pacotes listados no roadmap abaixo são funcionalidades planejadas; crie cada diretório de pacote somente quando iniciar sua especificação. Os artefatos consolidados em `reference/` são contexto de projeto e não substituem specs incrementais aprovadas.
 
 ---
 

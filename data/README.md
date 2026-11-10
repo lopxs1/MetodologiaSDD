@@ -22,7 +22,7 @@ Não versionar bases completas de clientes, dados pessoais, prontuários, creden
 
 ## Relação com o restante do projeto
 
-Relacione fontes e transformações aos requisitos, perguntas de pesquisa, serviços, interfaces e testes apenas quando a relação existir. Consulte [`docs/der/`](../docs/der/README.md), [`docs/requisitos/`](../docs/requisitos/README.md) e [`docs/testes/`](../docs/testes/).
+Relacione fontes e transformações aos requisitos, perguntas de pesquisa, serviços, interfaces e testes apenas quando a relação existir. Consulte o [DER](../.specify/reference/data-model/der.md), o [dicionário de dados](../.specify/reference/data-model/dicionario-de-dados.md), os [requisitos](../.specify/reference/requirements/especificacao-requisitos.md) e a especificação correspondente em `.specify/specs/`.
 
 ## Exemplo preenchido (fictício)
 

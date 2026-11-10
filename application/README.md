@@ -48,7 +48,7 @@ Se houver configuração para iniciar múltiplos componentes juntos, como Docker
 
 - **App móvel independente:** [`mobile/README.md`](../mobile/README.md), se existir.
 - **Dados, análises ou pipelines:** [`data/README.md`](../data/README.md), se aplicável.
-- **Documentação acadêmica e artefatos:** [`docs/README.md`](../docs/README.md).
+- **Requisitos e artefatos de engenharia:** [`.specify/`](../.specify/README.md).
 - **Backlog do produto:** [`PRODUCT-BACKLOG.md`](../PRODUCT-BACKLOG.md), se adotado.
 
 ## Exemplo de estado (fictício)

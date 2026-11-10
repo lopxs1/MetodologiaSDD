@@ -34,10 +34,10 @@ Registre os fluxos e estados cobertos: carregando, vazio, sucesso, erro, permiss
 
 ## Relação com a documentação
 
-- **Documentação acadêmica:** consulte [`docs/README.md`](../docs/README.md).
-- **Protótipos web:** [`docs/prototipos/`](../docs/prototipos/README.md), quando houver.
-- **Casos de uso:** [`docs/casos-de-uso/`](../docs/casos-de-uso/README.md), quando forem adequados aos fluxos do projeto.
-- **Plano e evidências de testes:** [`docs/testes/`](../docs/testes/README.md), quando aplicável.
+- **Requisitos:** [especificação de requisitos](../.specify/reference/requirements/especificacao-requisitos.md).
+- **Arquitetura:** [visão arquitetural](../.specify/reference/architecture/visao-arquitetural.md).
+- **Design system:** [diretrizes de interface](../.specify/memory/design-system.md) e [tokens](../design/tokens.json).
+- **Especificações de funcionalidades e validação:** consulte `.specify/specs/`.
 
 ## Exemplo preenchido (fictício; stack ilustrativa)
 
