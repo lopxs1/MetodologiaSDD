@@ -31,8 +31,8 @@
 | **Front-end Web (React/Vite)** | Telas e componentes em `frontend/` | Formulários, validações React Hook Form, estados e chamadas Axios |
 | **API Controller** | `@RestController` em Spring Boot | Endpoints REST, tratamento de DTOs de entrada e HTTP status codes |
 | **Serviço / Caso de Uso** | `@Service` de negócio | Orquestração das regras de domínio (RN01 a RN16) e transações `@Transactional` |
-| **Repositório / Persistência** | `@Repository` Spring Data JPA | Consultas, buscas indexadas e integridade referencial |
-| **Banco de Dados (PostgreSQL)** | Scripts de schema Liquibase | Tabelas, colunas, chaves primárias e estrangeiras definidas no `data-model.md` |
+| **Repositório / Persistência** | `@Repository` Spring Data JPA / Hibernate 6 | Consultas no schema `amde_digital` (role `amde_digital_app`), mapeamento explícito `columnDefinition = "text"` para colunas `text`/domínios, `OffsetDateTime` para `timestamptz` e filtro de soft delete `excluido_em IS NULL` |
+| **Banco de Dados (PostgreSQL 18)** | Changelogs Liquibase SQL (`--liquibase formatted sql`) | Tabelas, domínios, constraints (`pk_`, `fk_`, `uq_`, `ck_`), índices (`ix_`), triggers `tg_` e `COMMENT ON` com tags LGPD definidas no `data-model.md` |
 | **Auditoria e Logs** | `AuditoriaService` | Persistência do evento em `log_auditoria` sem expor dados sensíveis |
 
 ---
@@ -97,7 +97,10 @@ sequenceDiagram
 ## 8. Definição de Pronto (Definition of Done - DoD)
 
 - [ ] Contrato OpenAPI documentado e alinhado entre frontend e backend.
-- [ ] Changelogs Liquibase testados com sucesso (UP e rollback).
+- [ ] Changelogs Liquibase em formato SQL testados com sucesso (UP e rollback).
+- [ ] Linter `sqlfluff lint --dialect postgres` aprovado sem erros nos scripts SQL.
+- [ ] Todas as 7 consultas estruturais de `data/verificacao.sql` retornando zero linhas e inventário `[LGPD: ...]` conferido.
+- [ ] Checklist de Revisão de Banco de Dados (Seção 11 das Diretrizes / [`AGENTS.md`](../../../AGENTS.md)) preenchido.
 - [ ] Implementação de regras de negócio aderente às diretrizes da Constituição.
 - [ ] Log de auditoria disparado em operações sensíveis.
 - [ ] Cobertura de testes unitários e de integração satisfatória.

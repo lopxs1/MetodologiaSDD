@@ -29,7 +29,7 @@
 | **RNF-01** | Segurança | Autenticação stateless via tokens JWT; senhas criptografadas com algoritmo BCrypt. | Teste de segurança e inspeção de cabeçalhos HTTP. |
 | **RNF-02** | Desempenho | Tempo médio de resposta inferior a 500ms em consultas padrão sob carga. | Teste de carga com massa de dados sintética. |
 | **RNF-03** | Arquitetura | Back-end em Java 17 com Spring Boot 3; Front-end web em React/TypeScript (Vite). | Inspeção de código e compilação nos pipelines CI/CD. |
-| **RNF-04** | Banco de Dados & Migrations | Banco relacional PostgreSQL 16 com controle de evolução por changelogs Liquibase. | Execução de migração UP e rollback em ambiente de teste. |
+| **RNF-04** | Banco de Dados & Migrations | Banco relacional PostgreSQL 18 (schema `amde_digital`) com bootstrap segregado por roles, controle de evolução por changelogs Liquibase em SQL formatado e verificação automática via `sqlfluff` e `verificacao.sql`. | Execução de migração UP, rollback e retorno de zero linhas nas consultas de `verificacao.sql`. |
 | **RNF-05** | Acessibilidade e Interface | Aderência às diretrizes WCAG 2.1 nível AA e uso estrito de tokens do Design System. | Validação automatizada com Lighthouse e Axe DevTools. |
 
 ---
@@ -41,7 +41,7 @@
 | **RN01** | Senhas criptografadas exclusivamente com BCrypt; nunca em texto puro. | Autenticação | UC02, UC04 |
 | **RN02** | Unicidade de e-mail no cadastro de usuários (`HTTP 409 Conflict` se duplicado). | Usuários | UC04 |
 | **RN03** | Exclusividade administrativa sobre operações de criação e gestão de usuários. | Usuários | UC04 a UC07 |
-| **RN04** | Especialização 1:1 de `usuario` em `pacientes` (grau de suporte TEA) ou `funcionarios` (CRM/cargo). | Domínio | Diagrama de Classes |
+| **RN04** | Especialização 1:1 de `usuario` em `paciente` (grau de suporte TEA) ou `funcionario` (CRM/cargo). | Domínio | Diagrama de Classes |
 | **RN05** | Validação estrita de formato (PDF) e tamanho máximo (< 10MB) no upload de prontuário. | Prontuários | UC10, UC13 |
 | **RN06** | Permissão de upload/exclusão restrita a Funcionário e Admin; download aberto ao titular. | Prontuários | UC10, UC11, UC12 |
 | **RN07** | Preservação do nome original no banco e uso de UUID para o arquivo físico no storage. | Prontuários | UC10 |
@@ -49,9 +49,9 @@
 | **RN09** | Download retorna `404 Not Found` se ID inexistente e `500` se arquivo físico ausente. | Prontuários | UC11 |
 | **RN10** | Exclusão de prontuário remove arquivo físico e registra log antes de deletar registro. | Prontuários | UC12 |
 | **RN11** | Pré-existência obrigatória de Paciente e Funcionário para registrar agendamento. | Agendamentos | UC14 |
-| **RN12** | Consistência temporal de datas: `data_inicio < data_final`. | Agendamentos | UC14 |
+| **RN12** | Consistência temporal de datas: `data_fim > data_inicio` (`data_inicio < data_fim`). | Agendamentos | UC14 |
 | **RN13** | Proibição de agendamentos conflitantes no mesmo horário para o mesmo profissional (`HTTP 409`). | Agendamentos | UC14, UC18 |
-| **RN14** | Status inicial padrão "Agendado" e controle individual de presença via `agenda_paciente`. | Agendamentos | UC14 |
+| **RN14** | Status inicial padrão `AGENDADO` e controle individual de presença (`possui_presenca`) via `agendamento_paciente`. | Agendamentos | UC14 |
 | **RN15** | Filtro automático de visibilidade de agendamentos pelo perfil logado (Paciente/Médico/Admin). | Agendamentos | UC19 |
 | **RN16** | Rastreabilidade mandatória em `log_auditoria` para todas as ações sensíveis (LGPD / CFM). | Auditoria | UC20 |
 

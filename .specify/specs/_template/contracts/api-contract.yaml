@@ -47,10 +47,18 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
+          example: 1
         campo_obrigatorio:
           type: string
         criado_em:
           type: string
           format: date-time
+        atualizado_em:
+          type: string
+          format: date-time
+        excluido_em:
+          type: string
+          format: date-time
+          nullable: true

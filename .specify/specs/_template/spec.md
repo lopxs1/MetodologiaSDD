@@ -62,12 +62,13 @@
 - **Entidades Novas ou Alteradas:** [Liste o que é criado ou estendido nesta funcionalidade]
 
 ### 5.2. Checklist de Suficiência de Entidades (Pré-Planejamento)
-*A IA e os desenvolvedores devem checar estas 5 perguntas para cada entidade antes de avançar para o plano técnico:*
+*A IA e os desenvolvedores devem checar estas perguntas para cada entidade antes de avançar para o plano técnico:*
 - [ ] **Identidade:** O que torna a instância única (chave de negócio / natural e chave substituta)?
-- [ ] **Atributos:** Quais informações são obrigatórias (`NOT NULL`) e quais são opcionais?
+- [ ] **Atributos e Nulabilidade:** Quais informações são obrigatórias e quais são opcionais (com justificativa clara de negócio para cada campo opcional/anulável)?
 - [ ] **Relacionamentos:** Quais as cardinalidades mínimas e máximas com outras entidades?
 - [ ] **Regras & Invariantes:** Quais restrições de domínio, limites ou estados válidos aplicam-se?
-- [ ] **Ciclo de Vida & Histórico:** A entidade sofre exclusão física ou lógica (*soft delete*)? Há necessidade de guardar histórico de alterações?
+- [ ] **Ciclo de Vida & Histórico:** A entidade sofre inativação lógica (soft delete via data/hora de exclusão) ou é imutável/histórica?
+- [ ] **Classificação LGPD e Minimização:** Quais atributos contêm dados pessoais (`pessoal`) ou clínicos/saúde (`sensível`) e qual a justificativa de uso de cada um?
 
 ---
 

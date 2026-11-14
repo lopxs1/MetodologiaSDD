@@ -49,87 +49,113 @@ classDiagram
     }
 
     class Usuario {
-        -Long idUsuario
+        -Long id
         -String nome
         -String email
         -String senha
-        -LocalDate dataNasc
+        -LocalDate dataNascimento
         -NivelAcesso nivelAcesso
         -String numCelular
         -String pais
         -String estado
         -String cidade
         -String rua
-        -Boolean ativo
-        -LocalDateTime criadoEm
-        -LocalDateTime atualizadoEm
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
+        -OffsetDateTime excluidoEm
         +autenticar(senha) Boolean
     }
 
     class Funcionario {
-        -Long idFuncionario
+        -Long id
+        -Long usuarioId
         -String crm
         -String cargo
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
+        -OffsetDateTime excluidoEm
     }
 
     class Paciente {
-        -Long idPaciente
-        -String descPaciente
+        -Long id
+        -Long usuarioId
+        -String descricao
         -GrauSuporte grauSuporte
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
+        -OffsetDateTime excluidoEm
     }
 
     class Categoria {
-        -Long idCategoria
+        -Long id
         -String nome
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
     }
 
     class RegistroProntuario {
-        -Long idProntuario
+        -Long id
+        -Long pacienteId
+        -Long categoriaId
+        -Long registroSubstituidoId
         -String tituloDocumento
         -String nomeArquivoOriginal
         -String nomeArquivoArmazenado
-        -LocalDateTime dataRegistro
-        -Boolean ativo
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
+        -OffsetDateTime excluidoEm
         +substituirPor(novoRegistro) void
     }
 
     class Agendamento {
-        -Long idAgenda
-        -LocalDateTime dataInicio
-        -LocalDateTime dataFinal
+        -Long id
+        -Long funcionarioId
+        -OffsetDateTime dataInicio
+        -OffsetDateTime dataFim
         -TipoAgendamento tipoAgendamento
         -StatusAgendamento status
-        -Boolean presencaFuncionario
+        -Boolean possuiPresencaFuncionario
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
         +verificarConflito(inicio, fim) Boolean
     }
 
-    class AgendaPaciente {
-        -Long idAgendaPaciente
-        -Boolean presencaPaciente
+    class AgendamentoPacienteId {
+        -Long agendamentoId
+        -Long pacienteId
+    }
+
+    class AgendamentoPaciente {
+        -AgendamentoPacienteId id
+        -Boolean possuiPresenca
+        -OffsetDateTime criadoEm
+        -OffsetDateTime atualizadoEm
     }
 
     class LogAuditoria {
-        -Long idLog
+        -Long id
+        -Long usuarioId
         -AcaoAuditoria acao
         -String recurso
-        -String ip
-        -LocalDateTime dataHora
+        -String ipOrigem
+        -OffsetDateTime criadoEm
     }
 
-    Usuario <|-- Funcionario : Especialização
-    Usuario <|-- Paciente : Especialização
+    Usuario "1" -- "0..1" Funcionario : especializa
+    Usuario "1" -- "0..1" Paciente : especializa
     Usuario "1" --> "1" NivelAcesso : possui
     Paciente "1" --> "1" GrauSuporte : possui
 
     Paciente "1" o-- "0..*" RegistroProntuario : possui documentos
     Categoria "1" o-- "0..*" RegistroProntuario : categoriza
-    RegistroProntuario "0..1" --> "0..1" RegistroProntuario : idRegistroSubstituido
+    RegistroProntuario "0..1" --> "0..1" RegistroProntuario : registroSubstituidoId
 
-    Funcionario "1" o-- "0..*" Agendamento : conduz sessões
+    Funcionario "1" o-- "0..*" Agendamento : conduz sessoes
     Agendamento "1" --> "1" TipoAgendamento : classifica
     Agendamento "1" --> "1" StatusAgendamento : possui
-    Agendamento "1" *-- "1..*" AgendaPaciente : agendado para
-    Paciente "1" o-- "0..*" AgendaPaciente : participa de
+    Agendamento "1" *-- "1..*" AgendamentoPaciente : agendado para
+    Paciente "1" o-- "0..*" AgendamentoPaciente : participa de
+    AgendamentoPaciente *-- AgendamentoPacienteId : chave composta
 
     Usuario "1" --> "0..*" LogAuditoria : gera registro
     LogAuditoria "1" --> "1" AcaoAuditoria : registra

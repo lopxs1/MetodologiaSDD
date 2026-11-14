@@ -8,8 +8,8 @@
 > - Kaiky Saquette Pereira  
 > - Vinicius Firmino Oliveira de Souza  
 > **Orientador:** Prof. Antonio Cesar de Barros Munari  
-> **Versão da Constituição:** 1.3.0  
-> **Última alteração:** 2026-11-10  
+> **Versão da Constituição:** 2.0.0  
+> **Última alteração:** 2026-11-14  
 > **Finalidade:** Definir os princípios inegociáveis que valem para todo o projeto. Toda spec, plano e implementação deve respeitá-los. Em caso de conflito entre uma spec e esta constituição, a constituição prevalece, a menos que a spec registre explicitamente a exceção e sua justificativa.
 
 ---
@@ -28,8 +28,8 @@
 
 - **Back-end:** Java 17 LTS com Spring Boot 3 (Spring Security 6, Spring Data JPA / Hibernate, MapStruct, Maven).
 - **Front-end:** React 18+ (SPA) com TypeScript, Vite, Tailwind CSS, Shadcn/ui (Radix UI) e Axios.
-- **Banco de Dados:** PostgreSQL 16 (SGBD Relacional ACID).
-- **Controle de Evolução de Banco:** Liquibase com versionamento formal via changelogs em formato SQL (`-- Liquibase formatted SQL`) e suporte obrigatório a rollback.
+- **Banco de Dados:** PostgreSQL 18 (SGBD Relacional ACID), operando no schema dedicado `amde_digital` com segregação de roles (`amde_digital_owner` para DDL/migrations e `amde_digital_app` para DML da aplicação).
+- **Controle de Evolução de Banco:** Liquibase com versionamento formal via changelogs em formato SQL (`--liquibase formatted sql`), precedido pelo script único de preparação de ambiente (`data/00_bootstrap.sql`), com validação automática obrigatória via `sqlfluff` e `data/verificacao.sql` e suporte obrigatório a rollback.
 - **Autenticação & Autorização:** Stateless via tokens JWT (`io.jsonwebtoken`), senhas protegidas via algoritmo BCrypt (RN01) e controle de acesso baseado em perfis (`ADMINISTRADOR`, `MEDICO`, `PACIENTE`).
 - **Armazenamento de Arquivos e Infraestrutura:** Docker e Docker Compose para ambiente local; CI/CD via GitHub Actions; armazenamento de PDFs de prontuário em sistema de arquivos local (desenvolvimento) e AWS S3 (produção) sob o caminho padronizado `uploads/prontuarios/paciente-{id}/{uuid}.pdf`, com distribuição do front-end via AWS CloudFront.
 - **Testes Automatizados:** JUnit 5, Mockito e Spring Boot Test no back-end; Vitest e Testing Library no front-end; todo requisito funcional deve possuir ao menos um cenário de teste de aceitação automatizado correspondente.
@@ -39,33 +39,56 @@
 ## 3. Princípios de Modelagem e Governança de Dados
 
 ### 3.1 Convenções
-- **Nomenclatura no Banco:** Nomes de tabelas e colunas em português e em `snake_case`, respeitando os nomes consolidados no DER (`usuario`, `funcionarios`, `pacientes`, `categoria`, `registro_prontuario`, `agendamentos`, `agenda_paciente`, `log_auditoria`). Novas tabelas devem ser criadas no singular.
-- **Chave Primária:** Toda tabela possui chave primária artificial sequencial (`SERIAL` / `INTEGER` no PostgreSQL, mapeada como `Long` no JPA) nomeada no formato `id_<entidade>` (ex.: `id_usuario`, `id_funcionario`, `id_paciente`, `id_categoria`, `id_prontuario`, `id_agenda`, `id_agenda_paciente`, `id_log`).
-- **Chaves Estrangeiras:** Nomeadas no formato `id_<entidade>` referenciando a chave primária correspondente (ex.: `id_usuario`, `id_paciente`, `id_categoria`, `id_funcionario`, `id_agenda`) ou o papel semântico no auto-relacionamento (`id_registro_substituido`).
-- **Auditoria Temporal:** Tabelas cadastrais com ciclo de atualização mantêm as colunas `criado_em` e `atualizado_em` (`TIMESTAMPTZ` / `TIMESTAMP WITH TIME ZONE`, padrão `CURRENT_TIMESTAMP`), enquanto tabelas de eventos e anexos registram o instante exato da ocorrência (`data_registro` em `registro_prontuario` e `data_hora` em `log_auditoria`, ambos `TIMESTAMPTZ`).
-- **Anexos e Identificadores Físicos:** Arquivos de prontuário são restritos ao formato PDF com tamanho máximo de 10MB (RN05). O nome original do arquivo é salvo em `nome_arquivo_original` e o arquivo físico é renomeado com `UUID` único em `nome_arquivo_armazenado` (`UNIQUE`) (RN07).
-- **Datas e Horários:** Datas puras (ex.: `data_nasc`) utilizam tipo `DATE` (`LocalDate` no Java); eventos com horário (ex.: `data_inicio` e `data_final` de agendamentos e carimbos de auditoria) utilizam `TIMESTAMP WITH TIME ZONE` (`TIMESTAMPTZ`).
-- **Campos Booleanos:** Nomeados como afirmação clara com valor padrão definido (ex.: `ativo`, `presenca_funcionario`, `presenca_paciente`).
+- **Schema Exclusivo:** Todos os objetos do sistema pertencem ao schema `amde_digital`. O schema `public` contém exclusivamente extensões (`unaccent`, `pg_trgm`) e jamais objetos de negócio.
+- **Nomenclatura no Banco:** Identificadores estritamente em `snake_case` minúsculo, português sem acentos e sem cedilha, nunca entre aspas e sem prefixos de tipo (`tb_`, `vw_`). Todas as tabelas são nomeadas no **singular**: `usuario`, `funcionario`, `paciente`, `categoria`, `registro_prontuario`, `agendamento`, `agendamento_paciente`, `log_auditoria`.
+- **Nomes por Extenso e Abreviações Permitidas:** Nomes descritivos por extenso (respeitando o limite de 63 caracteres do PostgreSQL). É proibido usar abreviações fora da lista fechada (`qtd`, `num`, `cpf`, `cnpj`, `cep`, `rg`). Ex.: `data_nascimento` (nunca `data_nasc`), `descricao` (nunca `desc_paciente`), `data_fim` (nunca `data_final`), `ip_origem` (nunca `ip`).
+- **Chave Primária (`id`):** Em todas as tabelas de entidade, a chave primária chama-se `id` com tipo `bigint generated always as identity` (mapeada como `Long` no JPA). É proibido usar `serial` ou `bigserial`. Na tabela associativa `agendamento_paciente`, utiliza-se chave primária composta `(agendamento_id, paciente_id)`.
+- **Chaves Estrangeiras (`<tabela_referenciada>_id`):** Nomeadas no formato `<tabela_referenciada>_id` com tipo `bigint` (`usuario_id`, `paciente_id`, `categoria_id`, `funcionario_id`, `agendamento_id`) ou qualificadas pelo papel semântico no auto-relacionamento (`registro_substituido_id` em `registro_prontuario`).
+- **Tipos de Dados e Domínios:** Texto em geral utiliza `text` com limites e formatos validados por `CHECK` (`char_length(trim(...))`) ou `DOMAIN`. Nunca usar `varchar(n)` arbitrário nem `char(n)`. Campos recorrentes de formato fixo utilizam domínios dedicados (`telefone`, `cpf`, `cep`), armazenando apenas dígitos sem máscara (a máscara é responsabilidade da interface). Valores monetários/exatos utilizam `numeric(p,s)` (nunca `float`, `real`, `double precision` ou `money`). Datas puras utilizam `date` (`LocalDate` no Java); data e hora utilizam `timestamptz` (`OffsetDateTime` ou `Instant` no Java; nunca `timestamp` sem fuso). Domínios pequenos e estáveis utilizam `text` + `CHECK (coluna in (...))` ou tabela de referência (nunca `enum` nativo do PostgreSQL). `jsonb` só é permitido com justificativa escrita no comentário da coluna (nunca `json`).
+- **Campos Booleanos:** Nomeados com prefixo que indique pergunta ou estado claro (`possui_presenca_funcionario`, `possui_presenca`), tipo `boolean` com valor padrão definido.
+- **Auditoria Temporal Padrão:** Toda tabela de negócio (`usuario`, `funcionario`, `paciente`, `categoria`, `registro_prontuario`, `agendamento`, `agendamento_paciente`) possui `criado_em timestamptz not null default now()` e `atualizado_em timestamptz not null default now()`, sendo `atualizado_em` mantido pela função/trigger `definir_atualizado_em()` (`tg_<tabela>_atualizado_em`). A tabela `log_auditoria`, por ser estritamente imutável (*append-only*), possui apenas `criado_em timestamptz not null default now()`, sem `atualizado_em`, sem `excluido_em` e sem trigger de atualização.
+- **Padrão de Nomes de Constraints, Índices e Triggers:** Todos devem ser nomeados explicitamente:
+  - Chave Primária: `pk_<tabela>`
+  - Chave Estrangeira: `fk_<tabela>_<ref>`
+  - Índice da FK: `ix_<tabela>_<ref>` (mesmo sufixo da FK com prefixo `ix_`, declarado imediatamente após a FK, exceto quando a coluna já é a primeira coluna de uma PK ou índice único existente)
+  - Unicidade (constraint ou índice único): `uq_<tabela>_<colunas>`
+  - Check: `ck_<tabela>_<regra>`
+  - Outros índices: `ix_<tabela>_<colunas>`
+  - Trigger de auditoria: `tg_<tabela>_atualizado_em`
+- **Anexos e Identificadores Físicos:** Arquivos de prontuário são restritos ao formato PDF com tamanho máximo de 10MB (RN05). O nome original do arquivo é salvo em `nome_arquivo_original` e o arquivo físico é renomeado com `UUID` único em `nome_arquivo_armazenado` (`uq_registro_prontuario_arquivo_armazenado`) (RN07).
 
 ### 3.2 Integridade e Divisão de Responsabilidades
-- **O Banco de Dados garante:** Chaves primárias e estrangeiras, unicidade de identificadores (`UNIQUE` em `usuario.email`, `categoria.nome`, `registro_prontuario.nome_arquivo_armazenado`, `funcionarios.id_usuario`, `pacientes.id_usuario` e chave composta `(id_agenda, id_paciente)` em `agenda_paciente`), obrigatoriedade (`NOT NULL`), integridade referencial e restrições de domínio via `CHECK` (incluindo `CHECK(data_inicio < data_final)` em `agendamentos`).
+- **O Banco de Dados garante:**
+  - `NOT NULL` é o padrão; qualquer coluna anulável exige o motivo explicado no `COMMENT ON COLUMN`.
+  - Toda relação tem chave estrangeira declarada via `ALTER TABLE`, seguida imediatamente da criação do seu índice (`CREATE INDEX ix_<tabela>_<ref>`), exceto quando a coluna já for a primeira coluna de uma PK ou índice único existente.
+  - Unicidade simples via constraint `UNIQUE` (`uq_`) e unicidade com expressão ou soft delete via índice único parcial/funcional com prefixo `uq_` (ex.: `uq_usuario_email_ativo ON usuario (lower(email)) WHERE excluido_em IS NULL`).
+  - Regras simples de domínio via `CHECK` (`ck_`), incluindo `ck_agendamento_periodo CHECK (data_fim > data_inicio)`, limites de tamanho/não-vazio de textos e valores válidos de domínio.
 - **A Aplicação garante:** Regras dependentes de múltiplos estados, contexto temporal e perfil de acesso (ex.: bloqueio de sobreposição de horários da agenda do mesmo profissional com retorno `HTTP 409 Conflict` conforme RN13, validação de PDF < 10MB conforme RN05 e autorização RBAC conforme RN03, RN06 e RN15).
-- **Relacionamentos N:N:** Sempre materializados por meio de tabela associativa explícita com atributos próprios do vínculo (ex.: `agenda_paciente` contendo `presenca_paciente`).
-- **Listas de Valores Fixos:** Devem utilizar Enums tipados na aplicação (`@Enumerated(EnumType.STRING)`) e colunas `VARCHAR` com constraints `CHECK` no banco de dados (ex.: `nivel_acesso`, `grau_suporte`, `tipo_agendamento`, `status` do agendamento e `acao` de auditoria). Classificações estruturadas em entidade própria no modelo de domínio (como `categoria` de prontuário) são materializadas em tabela dedicada vinculada por chave estrangeira (`id_categoria`).
+- **Relacionamentos N:N:** Sempre materializados por meio de tabela associativa explícita com chave primária composta e atributos próprios do vínculo (ex.: `agendamento_paciente` com PK composta `(agendamento_id, paciente_id)` e atributo `possui_presenca`).
+- **Listas de Valores Fixos:** Devem utilizar Enums tipados na aplicação (`@Enumerated(EnumType.STRING)`) em `UPPER_SNAKE_CASE` sem acento e colunas `text` com constraints `CHECK` no banco de dados (ex.: `nivel_acesso`, `grau_suporte`, `tipo_agendamento`, `status` do agendamento e `acao` de auditoria). Classificações estruturadas em entidade própria no modelo de domínio (como `categoria` de prontuário) são materializadas em tabela dedicada vinculada por chave estrangeira (`categoria_id`).
+- **Exceções e Alinhamento com Spring Data JPA / Hibernate:** Mapear explicitamente `@Table(name = "<tabela>", schema = "amde_digital")`, colunas `text` e domínios (`telefone`, `cpf`, `cep`) com `@Column(columnDefinition = "text")`, colunas `timestamptz` com `OffsetDateTime` (ou `Instant`), a chave composta de `agendamento_paciente` com `@EmbeddedId` (`AgendamentoPacienteId`) e a entidade `LogAuditoria` com `@Immutable`. Todas as convenções e exceções de ORM devem estar documentadas em [`AGENTS.md`](../../AGENTS.md).
 
 ### 3.3 Exclusão, Ciclo de Vida e Histórico
-- **Exclusão Lógica (*Soft Delete*):** Contas de usuários (`usuario`), pacientes e funcionários vinculados nunca sofrem exclusão física em produção; a inativação ocorre exclusivamente pela flag booleana `ativo = false`. Agendamentos cancelados preservam seu histórico alterando a coluna `status` para `Cancelado`, e registros em `log_auditoria` são estritamente imutáveis (*append-only*).
-- **Ciclo de Vida de Arquivos de Prontuário:** O arquivamento lógico de documentos utiliza a flag `ativo = false` em `registro_prontuario` (e classificação na categoria `Arquivado`). Já a operação de exclusão de prontuário (UC12 / RN10), restrita a `ADMINISTRADOR` e `MEDICO`, exige o registro prévio em `log_auditoria` e a remoção do arquivo físico do storage antes da exclusão do metadado no banco.
-- **Versionamento de Documentos:** A substituição de laudos, exames e receituários deve preservar o histórico clínico por meio do auto-relacionamento `id_registro_substituido` em `registro_prontuario` (RN08).
+- **Exclusão Lógica Padronizada (*Soft Delete* via `excluido_em timestamptz`):** Substitui qualquer coluna booleana `ativo`. Nas tabelas que possuem inativação/exclusão lógica (`usuario`, `funcionario`, `paciente`, `registro_prontuario`), `excluido_em IS NULL` representa registro ativo e `excluido_em IS NOT NULL` registra a data/hora exata da inativação lógica. A regra de soft delete deve ser documentada no `COMMENT ON TABLE` de cada tabela afetada, e restrições de unicidade sobre registros ativos devem usar índices únicos parciais (`WHERE excluido_em IS NULL`). Agendamentos cancelados preservam seu histórico alterando a coluna `status` para `CANCELADO` (sem `excluido_em`), e registros em `log_auditoria` são estritamente imutáveis (*append-only*).
+- **Ciclo de Vida de Arquivos de Prontuário:** O arquivamento lógico de documentos preenche `excluido_em` em `registro_prontuario` (e/ou classifica na categoria `Arquivado`). Já a operação de exclusão de prontuário (UC12 / RN10), restrita a `ADMINISTRADOR` e `MEDICO`, exige o registro prévio em `log_auditoria` e a remoção do arquivo físico do storage antes da inativação/exclusão do metadado no banco.
+- **Versionamento de Documentos:** A substituição de laudos, exames e receituários deve preservar o histórico clínico por meio do auto-relacionamento `registro_substituido_id` em `registro_prontuario` (RN08).
 
-### 3.4 Proteção de Dados Sensíveis (LGPD e Resolução CFM nº 1.821/2007)
-- **Dados Pessoais e Clínicos:** Nome, e-mail, telefone (`num_celular`), data de nascimento (`data_nasc`), endereço residencial, grau de suporte TEA (`grau_suporte`), histórico clínico (`desc_paciente`) e arquivos PDF de prontuários de crianças e adolescentes assistidos pela AMDE são dados pessoais e sensíveis protegidos pela LGPD.
+### 3.4 Proteção de Dados Sensíveis, Documentação no Catálogo e LGPD
+- **Documentação Obrigatória no Banco (`COMMENT ON`):** `COMMENT ON TABLE` é obrigatório em todas as tabelas (documentando finalidade, regra de soft delete `excluido_em` ou imutabilidade). `COMMENT ON COLUMN` é obrigatório em colunas não óbvias, em toda coluna anulável (com o motivo de aceitar `NULL`) e em colunas com dados pessoais/sensíveis.
+- **Marcação e Minimização LGPD:** Toda coluna com dado pessoal inicia o comentário com `[LGPD: pessoal]` + justificativa de uso (ex.: `nome`, `email`, `num_celular`, `data_nascimento`, `pais`, `estado`, `cidade`, `rua`, `crm`, `cargo`, `ip_origem`). Toda coluna com dado pessoal sensível (dados clínicos, saúde e menores atendidos pela AMDE) inicia o comentário com `[LGPD: sensível]` + justificativa de uso (`grau_suporte`, `descricao`, `titulo_documento`, `nome_arquivo_original`, `nome_arquivo_armazenado`, `possui_presenca`). Dados de menores seguem rigoroso critério de minimização e nunca vão para seeds ou repositórios.
 - **Logs Seguros:** Dados pessoais sensíveis, senhas (mesmo em hash) e conteúdos de prontuários **nunca** aparecem em logs de console, arquivos de depuração ou mensagens técnicas de erro enviadas ao cliente.
 - **Trilha de Auditoria Obrigatória:** Toda operação sensível (`LOGIN`, `UPLOAD`, `DOWNLOAD`, `EXCLUSAO` e `AGENDAMENTO`) deve disparar gravação assíncrona obrigatória em `log_auditoria` via `AuditoriaService` (UC20 / RN16).
 
-### 3.5 Evolução do Esquema (Migrations)
+### 3.5 Evolução do Esquema, Bootstrap e Verificação Automática
+- **Estrutura em 4 Camadas:**
+  1. `data/00_bootstrap.sql`: script único executado por superusuário (criação de roles `amde_digital_owner` e `amde_digital_app`, database `amde_digital` com UTF-8/ICU `pt-BR` e `America/Sao_Paulo`, extensões `unaccent` e `pg_trgm` em `public`, schema `amde_digital`, `ALTER DEFAULT PRIVILEGES`, `search_path` e timeouts).
+  2. Migration inicial Liquibase em formato SQL (`--liquibase formatted sql`) executada pela role `amde_digital_owner`.
+  3. Migrations incrementais: uma mudança lógica por arquivo; toda nova tabela vem no mesmo arquivo com suas FKs, índices e comentários.
+  4. Seeds sintéticos em arquivos separados das migrations estruturais.
+- **Ordem Obrigatória dentro da Migration Inicial:** (1) Domínios (`CREATE DOMAIN`); (2) `CREATE TABLE` com colunas, PK, UNIQUE e CHECK; (3) FKs via `ALTER TABLE`, cada uma seguida imediatamente do `CREATE INDEX` correspondente; (4) Demais índices; (5) Função `definir_atualizado_em()` e triggers de auditoria; (6) `COMMENT ON`.
+- **Verificação Automática e Checklist de PR:** Todo changelog SQL deve passar pelo formatador/linter `sqlfluff` (dialeto `postgres`), pelas consultas de `data/verificacao.sql` (com zero linhas retornadas nas 7 verificações estruturais + revisão do inventário LGPD) e pelo Checklist de Revisão de Banco de Dados (documentado em [`AGENTS.md`](../../AGENTS.md)) antes do merge.
 - **Imutabilidade em Produção:** Uma vez aplicada em ambiente compartilhado ou de produção, uma migration do Liquibase é imutável e torna-se histórico permanente. Correções são feitas exclusivamente por nova migration de compensação.
-- **Migrations Incrementais:** Toda alteração no modelo de dados gera um novo changelog incremental no Liquibase contendo migração ascendente (`UP`) e procedimento de reversão seguro (`-- rollback`).
+- **Migrations Incrementais:** Toda alteração no modelo de dados gera um novo changelog incremental no Liquibase contendo migração ascendente (`UP`) e procedimento de reversão seguro (`--rollback`).
 - **Veto a Operações Destrutivas Silenciosas:** A IA está proibida de gerar scripts que descartem tabelas (`DROP TABLE`), removam colunas (`DROP COLUMN`) ou convertam tipos com perda de dados sem alerta explícito e aprovação humana da equipe.
 
 ---
@@ -106,7 +129,7 @@ Antes de gerar o plano técnico e sempre que uma especificação mudar, a IA dev
 - **Entidades × Regras de Negócio:** Toda entidade citada em uma RN (regras RN01 a RN16) deve existir formalmente no modelo.
 - **Telas × Entidades:** Todo campo exibido ou coletado na interface deve ter uma entidade de destino ou cálculo de origem declarado.
 - **Cenários BDD × Requisitos:** Todo cenário de aceite deve testar ao menos um RF ou RN, e todo RF deve possuir ao menos um cenário de teste.
-- **Linguagem Ubíqua:** Termos como "Usuário", "Funcionário / Profissional" (materializado na tabela `funcionarios` e autorizado sob o perfil `MEDICO`), "Paciente", "Grau de Suporte", "Prontuário Digital / PEP", "Categoria de Prontuário", "Agendamento", "Presença" e "Log de Auditoria" devem manter rigorosamente o mesmo significado em todos os documentos.
+- **Linguagem Ubíqua:** Termos como "Usuário", "Funcionário / Profissional" (materializado na tabela `funcionario` e autorizado sob o perfil `MEDICO`), "Paciente", "Grau de Suporte", "Prontuário Digital / PEP", "Categoria de Prontuário", "Agendamento", "Presença" e "Log de Auditoria" devem manter rigorosamente o mesmo significado em todos os documentos.
 
 ### 5.3 Ao gerar o Delta do Modelo de Dados (`data-model.md`)
 - Derivar o modelo lógico estritamente a partir do modelo conceitual em `domain-model.md`.

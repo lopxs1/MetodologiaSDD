@@ -39,7 +39,7 @@ O foco deste repositório é **reconstruir e evoluir o sistema AMDE Digital apli
 |---|---|
 | **Back-end** | Java 17 LTS, Spring Boot 3, Spring Security, Spring Data JPA, MapStruct, Maven |
 | **Front-end** | React 18+ (SPA), TypeScript, Vite, Tailwind CSS, Shadcn/ui (Radix UI), Axios |
-| **Banco de Dados** | PostgreSQL 16 com controle de evolução via **Liquibase** (changelogs versionados) |
+| **Banco de Dados** | PostgreSQL 18 (schema `amde_digital`) com controle de evolução via **Liquibase** (`--liquibase formatted sql`) e verificação automática (`sqlfluff` + `data/verificacao.sql`) |
 | **Autenticação** | Stateless via tokens JWT (JSON Web Tokens) com hash BCrypt para credenciais |
 | **DevOps & Cloud** | Docker, Docker Compose, GitHub Actions (CI/CD) e serviços em nuvem AWS (S3, CloudFront) |
 
@@ -56,16 +56,20 @@ O projeto adota uma separação estrita entre a memória global, os pacotes incr
 │   │   ├── constitution.md             # Regras inegociáveis, stack e comportamento da IA
 │   │   ├── domain-model.md             # DER conceitual em Mermaid, cardinalidades e glossário
 │   │   └── design-system.md            # Diretrizes visuais, acessibilidade WCAG e UI
-│   ├── design/
-│   │   └── tokens.json                 # Design tokens legíveis por máquina
 │   ├── reference/                      # Base consolidada de requisitos, arquitetura e dados
 │   │   ├── requirements/               # Requisitos funcionais e não funcionais
 │   │   ├── architecture/               # Visão arquitetural e diagrama de classes
 │   │   ├── data-model/                 # DER e dicionário de dados
-│   │   └── references/                 # Monografia de referência
+│   │   └── references/                 # Monografia e diretrizes de referência
 │   └── specs/                          # Especificações incrementais por funcionalidade
 │       └── _template/                  # Template base para novas specs
-├── backend/                            # Código-fonte da API Spring Boot
+├── AGENTS.md                           # Regras de banco PostgreSQL 18, exceções JPA/Hibernate e checklist de PR
+├── .sqlfluff                           # Configuração de lint SQL (dialeto postgres, minúsculas)
+├── docker-compose.yml                  # Container PostgreSQL 18 (Debian + ICU pt-BR) com bootstrap automático
+├── data/                               # Scripts de bootstrap (00_bootstrap.sql) e auditoria (verificacao.sql)
+├── design/
+│   └── tokens.json                     # Design tokens legíveis por máquina
+├── backend/                            # Código-fonte da API Spring Boot e changelogs Liquibase
 ├── frontend/                           # Código-fonte da aplicação Web React
 └── mobile/                             # Código-fonte do aplicativo mobile (quando aplicável)
 ```
@@ -82,10 +86,12 @@ Os artefatos de engenharia antes mantidos em `docs/` agora ficam centralizados e
 - Java JDK 17+ e Maven
 - Node.js (LTS v18+) e npm/yarn
 
-### 1. Inicializar Serviços de Infraestrutura
+### 1. Inicializar Serviços de Infraestrutura (PostgreSQL 18 + Bootstrap)
 ```bash
-docker-compose up -d postgres
+docker compose up -d postgres
 ```
+
+> Copie `backend/.env.example` para configurar suas variáveis locais sem versionar senhas reais. Para auditar a conformidade estrutural do schema `amde_digital`, execute `data/verificacao.sql` e `sqlfluff lint` conforme descrito em [`data/README.md`](data/README.md).
 
 ### 2. Executar o Back-end (Spring Boot)
 ```bash

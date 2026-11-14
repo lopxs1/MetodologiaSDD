@@ -31,7 +31,7 @@ flowchart TD
     end
 
     subgraph Persistencia ["Camada de Dados & Armazenamento"]
-        PG[("PostgreSQL 16 Relacional<br/>(Gerenciado por Liquibase)")]
+        PG[("PostgreSQL 18 - Schema amde_digital<br/>(Bootstrap + Liquibase SQL)")]
         STORAGE[("Armazenamento Seguro de PDFs<br/>(Local / AWS S3)")]
     end
 
@@ -61,8 +61,8 @@ flowchart TD
 | **Segurança & Filtro JWT** | Spring Security 6, JWT (io.jsonwebtoken) | Autenticação stateless, interceptação de requisições, validação de tokens e autorização baseada em roles (`ADMINISTRADOR`, `MEDICO`, `PACIENTE`). |
 | **Controllers REST** | Spring Web MVC | Exposição dos endpoints REST, validação de schemas de entrada (`@Valid`) e retorno de códigos HTTP adequados. |
 | **Camada de Serviço** | Spring Boot Service (`@Service`) | Implementação das regras de negócio (RN01 a RN16), cálculos, orquestração e gerenciamento transacional (`@Transactional`). |
-| **Camada de Acesso a Dados** | Spring Data JPA / Hibernate | Mapeamento objeto-relacional (ORM), consultas otimizadas e persistência no PostgreSQL. |
-| **Controle de Esquema** | Liquibase | Versionamento estrito e rastreável do banco de dados através de changelogs incrementais. |
+| **Camada de Acesso a Dados** | Spring Data JPA / Hibernate 6 | Mapeamento objeto-relacional (ORM) no schema `amde_digital`, utilizando a role restrita `amde_digital_app` (apenas DML, `search_path = amde_digital, public`, `statement_timeout = 30s`). |
+| **Controle de Esquema** | PostgreSQL 18 + Liquibase SQL | Preparação única via `data/00_bootstrap.sql` (superusuário) e evolução versionada via changelogs `--liquibase formatted sql` executados pela role `amde_digital_owner`, validados com `sqlfluff` e `data/verificacao.sql`. |
 | **Armazenamento de Arquivos** | File Storage Service / AWS S3 | Upload com nomenclatura UUID segura em `uploads/prontuarios/paciente-{id}/{uuid}.pdf`. |
 | **Auditoria e Logs** | Aspectos / AuditoriaService | Gravação de histórico de acessos a dados sensíveis clínicos em conformidade com LGPD e CFM nº 1.821/2007. |
 
