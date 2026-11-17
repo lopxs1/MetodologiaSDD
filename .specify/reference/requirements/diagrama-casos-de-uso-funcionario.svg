@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 865" width="1160" height="865" role="img" aria-label="Figura 01 – Diagrama de Casos de Uso (UML 2.5) — Visão do Funcionário">
+  <defs>
+    <marker id="uml-open-arrow" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 1.5 1.5 L 10.5 6 L 1.5 10.5" fill="none" stroke="#334155" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1160" height="865" fill="#ffffff"/>
+  <text x="580.0" y="28" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="15.5" font-weight="700" fill="#0f172a">Figura 01 – Diagrama de Casos de Uso (UML 2.5) — Visão do Funcionário</text>
+  <!-- Fronteira do Sistema (UML System Boundary) -->
+  <rect x="195" y="52" width="940" height="770" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="2"/>
+  <text x="665.0" y="77" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e293b">Sistema de Gestão Clínica - Funcionário</text>
+  <!-- Associacoes Ator - Caso de Uso -->
+  <line x1="112" y1="438" x2="235" y2="125" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="197" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="269" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="341" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="413" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="485" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="557" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="629" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="701" stroke="#334155" stroke-width="1.5"/>
+  <line x1="112" y1="438" x2="235" y2="773" stroke="#334155" stroke-width="1.5"/>
+  <!-- Relacionamentos <<include>> -->
+  <path d="M 537.1 116.8 C 638.1 116.8, 681.8 115.0, 810.0 115.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="651.5" y="112.0" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 545.0 125.0 C 661.6 125.0, 704.0 190.0, 810.0 190.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="695.3" y="159.3" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 133.2 C 617.9 133.2, 665.8 477.0, 836.4 477.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="578.5" y="158.6" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 545.0 197.0 C 652.1 197.0, 692.9 270.0, 800.0 270.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="722.7" y="252.0" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 260.8 C 657.2 260.8, 700.9 350.0, 810.0 350.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="730.6" y="328.9" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 277.2 C 640.5 277.2, 685.2 482.4, 816.6 482.4" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="605.9" y="305.2" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 545.0 341.0 C 659.0 341.0, 700.5 488.5, 804.2 488.5" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="667.2" y="399.7" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 545.0 413.0 C 672.5 413.0, 713.3 495.0, 800.0 495.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="720.1" y="467.9" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 476.8 C 662.7 476.8, 705.4 501.5, 804.2 501.5" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="736.1" y="493.3" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 493.2 C 647.9 493.2, 695.8 632.6, 836.4 632.6" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="649.8" y="538.3" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 620.8 C 688.0 620.8, 732.7 507.6, 816.6 507.6" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="662.8" y="584.9" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 537.1 637.2 C 668.8 637.2, 716.7 667.4, 836.4 667.4" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="722.5" y="653.6" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <path d="M 545.0 701.0 C 714.0 701.0, 760.7 513.0, 836.4 513.0" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="6,4" marker-end="url(#uml-open-arrow)"/>
+  <text x="632.9" y="677.5" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10.5" font-style="italic" fill="#334155" style="paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round;">«include»</text>
+  <!-- Atores UML -->
+  <g class="actor">
+    <circle cx="90" cy="414" r="11" fill="#ffffff" stroke="#1e293b" stroke-width="2.2"/>
+    <line x1="90" y1="425" x2="90" y2="452" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="73" y1="436" x2="107" y2="436" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="90" y1="452" x2="76" y2="472" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="90" y1="452" x2="104" y2="472" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="90" y="490" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">Funcionário</text>
+    <text x="90" y="506" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a">(MEDICO)</text>
+  </g>
+  <!-- Casos de Uso (Elipses UML) -->
+  <g class="usecase">
+    <ellipse cx="390" cy="125" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="129" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC01: Fazer Login</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="197" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="201" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC08: Consultar Paciente</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="269" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="273" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC10: Upload de Prontuário</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="341" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="345" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC11: Download de Prontuário</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="413" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="417" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC12: Excluir Prontuário</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="485" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="489" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC14: Criar Agendamento</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="557" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="561" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC15: Consultar Agendamento</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="629" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="626" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">UC16: Atualizar Agendamento</text>
+    <text x="390" y="640" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">e Presença</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="701" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="698" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">UC17: Excluir / Cancelar</text>
+    <text x="390" y="712" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">Agendamento</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="390" cy="773" rx="155" ry="26" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.8"/>
+    <text x="390" y="777" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC19: Listar Agendamentos</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="955" cy="115" rx="145" ry="26" fill="#f8fafc" stroke="#475569" stroke-width="1.8"/>
+    <text x="955" y="119" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC02: Verificar Credenciais</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="955" cy="190" rx="145" ry="26" fill="#f8fafc" stroke="#475569" stroke-width="1.8"/>
+    <text x="955" y="194" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC03: Gerar Token JWT</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="955" cy="270" rx="155" ry="27" fill="#f8fafc" stroke="#475569" stroke-width="1.8"/>
+    <text x="955" y="267" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">UC09: Listar Prontuários</text>
+    <text x="955" y="281" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">do Paciente</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="955" cy="350" rx="145" ry="26" fill="#f8fafc" stroke="#475569" stroke-width="1.8"/>
+    <text x="955" y="354" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">UC13: Validar Arquivo PDF</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="955" cy="495" rx="155" ry="28" fill="#f8fafc" stroke="#475569" stroke-width="1.8"/>
+    <text x="955" y="492" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">UC20: Registrar Log de</text>
+    <text x="955" y="506" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">Auditoria</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="955" cy="650" rx="155" ry="27" fill="#f8fafc" stroke="#475569" stroke-width="1.8"/>
+    <text x="955" y="647" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">UC18: Verificar Conflito</text>
+    <text x="955" y="661" text-anchor="middle" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#0f172a">de Horário</text>
+  </g>
+  <!-- Legenda UML -->
+  <line x1="195" y1="847" x2="231" y2="847" stroke="#334155" stroke-width="1.6"/>
+  <text x="239" y="851" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11" fill="#475569">Associação Ator–Caso de Uso</text>
+  <line x1="430" y1="847" x2="475" y2="847" stroke="#475569" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#uml-open-arrow)"/>
+  <text x="483" y="851" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11" fill="#475569">Dependência «include» (inclusão obrigatória)</text>
+  <ellipse cx="770" cy="847" rx="14" ry="8" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+  <text x="790" y="851" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11" fill="#475569">Caso de Uso Base</text>
+  <ellipse cx="920" cy="847" rx="14" ry="8" fill="#f8fafc" stroke="#475569" stroke-width="1.5"/>
+  <text x="940" y="851" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11" fill="#475569">Caso de Uso Incluído</text>
+</svg>
