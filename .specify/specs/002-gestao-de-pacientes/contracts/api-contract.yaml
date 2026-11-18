@@ -1,0 +1,511 @@
+openapi: 3.0.3
+info:
+  title: AMDE Digital API — Gestão de Pacientes
+  description: >
+    Contrato formal OpenAPI 3.0.3 da SPEC-002 (RF-03 / UC08, UC09).
+    Cobre listagem paginada de pacientes ativos, busca sem distinção de maiúsculas/acentos,
+    filtro por grau de suporte, ficha clínica com histórico documental agrupado por categoria,
+    controle estrito de acesso para o perfil PACIENTE, mascaramento/revelação de celular e
+    atualização de grau de suporte e descrição clínica.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desenvolvimento
+tags:
+  - name: Pacientes
+    description: Consulta de pacientes, ficha clínica e atualização de dados clínicos (UC08, UC09)
+
+paths:
+  /api/pacientes:
+    get:
+      tags:
+        - Pacientes
+      summary: Listar pacientes ativos com busca, filtro e ordenação (UC08)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO (RN29). Perfil PACIENTE recebe 403 Forbidden.
+        Retorna projeção resumida sem descricao clínica (RNF-03.2) e com numCelular sempre mascarado (RN33).
+      operationId: listarPacientes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: termo
+          in: query
+          required: false
+          description: Busca literal por nome ou e-mail (até 100 caracteres, insensível a maiúsculas e acentos)
+          schema:
+            type: string
+            maxLength: 100
+        - name: grauSuporte
+          in: query
+          required: false
+          description: Filtro opcional por grau de suporte TEA (um nível por vez, RN31)
+          schema:
+            $ref: '#/components/schemas/GrauSuporte'
+        - name: page
+          in: query
+          required: false
+          description: Índice da página (base 0)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: Itens por página (padrão 10, máximo 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: sort
+          in: query
+          required: false
+          description: Campo de ordenação permitido (RN30)
+          schema:
+            type: string
+            enum: [nome, email, grauSuporte]
+            default: nome
+        - name: direction
+          in: query
+          required: false
+          description: Direção da ordenação
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: ASC
+      responses:
+        '200':
+          description: Lista paginada de pacientes ativos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaPacientesResponse'
+        '400':
+          description: Parâmetros inválidos (ex. termo acima de 100 caracteres)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui permissão (ex. perfil PACIENTE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/pacientes/meu-prontuario:
+    get:
+      tags:
+        - Pacientes
+      summary: Consultar a própria ficha clínica e histórico de documentos (UC08, UC09)
+      description: >
+        Atalho dedicado ao perfil PACIENTE para abrir a própria ficha ("Meu prontuário").
+        Exibe o celular sempre mascarado e sem opção de revelação (RN33).
+      operationId: consultarMeuProntuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: docPage
+          in: query
+          required: false
+          description: Página dos documentos em cada categoria (base 0)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: docSize
+          in: query
+          required: false
+          description: Quantidade de documentos por página em cada categoria (padrão 10, máximo 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Ficha clínica do próprio paciente autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PacienteFichaResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Perfil sem especialização de paciente ou acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Ficha do paciente não encontrada ou inativada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/pacientes/{id}:
+    get:
+      tags:
+        - Pacientes
+      summary: Consultar ficha do paciente e histórico documental por categoria (UC08, UC09)
+      description: >
+        ADMINISTRADOR e MEDICO acessam qualquer paciente ativo e podem solicitar revelarCelular=true (RN33).
+        PACIENTE acessa apenas o próprio identificador; qualquer outro identificador retorna 403 Forbidden (RNF-03.3),
+        e o celular permanece sempre mascarado para PACIENTE. Retorna apenas metadados no histórico (sem binário PDF).
+      operationId: consultarFichaPaciente
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: revelarCelular
+          in: query
+          required: false
+          description: Revela o número completo apenas para ADMINISTRADOR ou MEDICO (ignorado para PACIENTE)
+          schema:
+            type: boolean
+            default: false
+        - name: docPage
+          in: query
+          required: false
+          description: Página dos documentos em cada categoria (base 0)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: docSize
+          in: query
+          required: false
+          description: Quantidade de documentos por página em cada categoria (padrão 10, máximo 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Ficha completa do paciente ativo e histórico agrupado por categoria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PacienteFichaResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Paciente tentou acessar ficha de outro paciente (RN29, RNF-03.3)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Paciente não encontrado ou inativado logicamente (RN29)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+    put:
+      tags:
+        - Pacientes
+      summary: Atualizar grau de suporte e descrição clínica do paciente ativo (UC08)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO (RN32). Atualiza imediatamente grauSuporte e descricao,
+        sem versionamento histórico e sem alterar dados cadastrais do Usuario.
+      operationId: atualizarDadosClinicosPaciente
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizarDadosClinicosRequest'
+      responses:
+        '200':
+          description: Dados clínicos atualizados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PacienteFichaResponse'
+        '400':
+          description: Grau de suporte inválido/ausente ou descrição clínica acima de 5.000 caracteres
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário com perfil PACIENTE tentou alterar dados clínicos (RN32)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Paciente não encontrado ou inativado logicamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    GrauSuporte:
+      type: string
+      enum: [NIVEL_1, NIVEL_2, NIVEL_3]
+
+    SituacaoDocumento:
+      type: string
+      enum: [VIGENTE, SUBSTITUIDO, ARQUIVADO]
+
+    PacienteResumoResponse:
+      type: object
+      description: Projeção resumida para listagem (nunca inclui descricao clínica, RNF-03.2)
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 12
+        usuarioId:
+          type: integer
+          format: int64
+          example: 25
+        nome:
+          type: string
+          example: José Lucas Teste
+        email:
+          type: string
+          format: email
+          example: jose.lucas@amde.example.org
+        grauSuporte:
+          $ref: '#/components/schemas/GrauSuporte'
+        numCelular:
+          type: string
+          nullable: true
+          description: Sempre mascarado na listagem (RN33)
+          example: '(15) *****-0011'
+
+    ListaPacientesResponse:
+      type: object
+      properties:
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/PacienteResumoResponse'
+        pagina:
+          type: integer
+          example: 0
+        tamanho:
+          type: integer
+          example: 10
+        totalItens:
+          type: integer
+          format: int64
+          example: 42
+        totalPaginas:
+          type: integer
+          example: 5
+
+    DocumentoHistoricoResumoDTO:
+      type: object
+      description: Metadados de prontuário exibidos na ficha (sem conteúdo binário do arquivo)
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+        tituloDocumento:
+          type: string
+          example: Laudo neuropsicológico
+        nomeArquivoOriginal:
+          type: string
+          example: laudo-2026.pdf
+        categoria:
+          type: string
+          enum: [Exames, Laudos, Receituario, Arquivado]
+          example: Laudos
+        situacao:
+          $ref: '#/components/schemas/SituacaoDocumento'
+        registroSubstituidoId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 98
+        criadoEm:
+          type: string
+          format: date-time
+          example: '2026-11-18T10:30:00-03:00'
+
+    CategoriaHistoricoDTO:
+      type: object
+      properties:
+        categoria:
+          type: string
+          enum: [Exames, Laudos, Receituario, Arquivado]
+        totalDocumentos:
+          type: integer
+          format: int64
+          example: 3
+        pagina:
+          type: integer
+          example: 0
+        tamanho:
+          type: integer
+          example: 10
+        totalPaginas:
+          type: integer
+          example: 1
+        documentos:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentoHistoricoResumoDTO'
+
+    PacienteFichaResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 12
+        usuarioId:
+          type: integer
+          format: int64
+          example: 25
+        nome:
+          type: string
+          example: José Lucas Teste
+        email:
+          type: string
+          format: email
+          example: jose.lucas@amde.example.org
+        dataNascimento:
+          type: string
+          format: date
+          nullable: true
+          example: '2016-03-15'
+        numCelular:
+          type: string
+          nullable: true
+          description: Mascarado por padrão; revelado apenas para ADMINISTRADOR/MEDICO quando revelarCelular=true
+          example: '(15) *****-0011'
+        celularMascarado:
+          type: boolean
+          example: true
+        pais:
+          type: string
+          nullable: true
+          example: Brasil
+        estado:
+          type: string
+          nullable: true
+          example: SP
+        cidade:
+          type: string
+          nullable: true
+          example: Sorocaba
+        rua:
+          type: string
+          nullable: true
+          example: Rua Modelo, 300
+        grauSuporte:
+          $ref: '#/components/schemas/GrauSuporte'
+        descricao:
+          type: string
+          nullable: true
+          example: Paciente em acompanhamento fonoaudiológico e terapêutico.
+        historicoPorCategoria:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoriaHistoricoDTO'
+        atualizadoEm:
+          type: string
+          format: date-time
+
+    AtualizarDadosClinicosRequest:
+      type: object
+      required:
+        - grauSuporte
+      properties:
+        grauSuporte:
+          $ref: '#/components/schemas/GrauSuporte'
+        descricao:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Opcional/anulável; máximo 5.000 caracteres após trim (RN32)
+          example: Evolução positiva na comunicação funcional.
+
+    CampoErroDTO:
+      type: object
+      properties:
+        campo:
+          type: string
+          example: grauSuporte
+        mensagem:
+          type: string
+          example: Grau de suporte inválido
+
+    ErroResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        mensagem:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErroValidacaoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        mensagem:
+          type: string
+          example: Erro de validação nos dados clínicos informados
+        erros:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoErroDTO'
+        timestamp:
+          type: string
+          format: date-time

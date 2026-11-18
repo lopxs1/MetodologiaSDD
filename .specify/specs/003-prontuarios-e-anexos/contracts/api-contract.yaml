@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: AMDE Digital API — Prontuários Digitais e Anexos
+  description: >
+    Contrato formal OpenAPI 3.0.3 da SPEC-003 (RF-04 / UC10 a UC13).
+    Define upload de PDF (< 10 MB, validação de magic bytes %PDF-), substituição com
+    versionamento, reclassificação/arquivamento, download autenticado e exclusão em 3 passos
+    com registro prévio obrigatório na trilha de auditoria.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desenvolvimento
+tags:
+  - name: Prontuarios
+    description: Operações sobre documentos clínicos em PDF (UC10, UC11, UC12, UC13)
+
+paths:
+  /api/prontuarios/upload:
+    post:
+      tags:
+        - Prontuarios
+      summary: Enviar novo documento PDF ou substituir versão via upload (UC10, UC13)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO (RN06). Valida paciente ativo, título (2..150 chars),
+        categoria oficial (Exames, Laudos, Receituario, Arquivado) e arquivo PDF válido < 10 MB
+        (extensão .pdf, Content-Type application/pdf e magic bytes %PDF-). Preserva nome original e
+        grava com UUID único no storage (RN07). Dispara evento assíncrono UPLOAD (RN16).
+      operationId: uploadProntuario
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pacienteId
+                - tituloDocumento
+                - categoria
+                - arquivo
+              properties:
+                pacienteId:
+                  type: integer
+                  format: int64
+                  example: 12
+                tituloDocumento:
+                  type: string
+                  minLength: 2
+                  maxLength: 150
+                  example: Laudo neuropsicológico
+                categoria:
+                  $ref: '#/components/schemas/NomeCategoria'
+                registroSubstituidoId:
+                  type: integer
+                  format: int64
+                  nullable: true
+                  description: Opcional; quando informado, vincula esta versão à versão vigente substituída (RN35)
+                arquivo:
+                  type: string
+                  format: binary
+                  description: Arquivo PDF válido com tamanho estritamente menor que 10 MB (10.485.760 bytes)
+      responses:
+        '201':
+          description: Documento armazenado e registrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProntuarioResponse'
+        '400':
+          description: Dados inválidos (título, nome original, campos ausentes) ou arquivo fora do padrão PDF/tamanho (UC13)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Perfil PACIENTE não pode enviar documentos (RN06)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Paciente, categoria ou documento substituído não encontrado ou inativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Documento alvo da substituição já foi substituído, está arquivado ou excluído (RN35)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '413':
+          description: Arquivo com tamanho igual ou superior a 10 MB (10.485.760 bytes)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '415':
+          description: Arquivo vazio, corrompido ou que não é um PDF válido (%PDF-)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/prontuarios/{id}/substituir:
+    post:
+      tags:
+        - Prontuarios
+      summary: Substituir documento vigente preservando histórico (UC10, UC13)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO (RN06). Aceita apenas documento vigente (não excluído,
+        não arquivado e ainda não substituído). O novo documento herda paciente e categoria, aceita
+        novo título opcional (padrão: o anterior) e dispara evento UPLOAD (RN35).
+      operationId: substituirProntuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador do documento vigente a ser substituído
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - arquivo
+              properties:
+                tituloDocumento:
+                  type: string
+                  minLength: 2
+                  maxLength: 150
+                  nullable: true
+                  description: Opcional; quando omitido, herda o título da versão anterior (RN35)
+                arquivo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Nova versão gravada e vinculada ao documento anterior
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProntuarioResponse'
+        '400':
+          description: Título inválido ou arquivo fora do padrão PDF/tamanho
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Perfil PACIENTE não pode substituir documentos (RN06)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Documento não encontrado ou já excluído
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Documento já substituído ou arquivado, ou substituição simultânea conflitante (RN35)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '413':
+          description: Arquivo com tamanho igual ou superior a 10 MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '415':
+          description: Arquivo vazio, corrompido ou não PDF
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/prontuarios/{id}/categoria:
+    patch:
+      tags:
+        - Prontuarios
+      summary: Reclassificar categoria ou arquivar documento ativo (RN36)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO. Move um documento ativo entre Exames, Laudos e Receituario
+        ou o arquiva na categoria Arquivado, mantendo o arquivo físico inalterado.
+      operationId: reclassificarCategoriaProntuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReclassificarCategoriaRequest'
+      responses:
+        '200':
+          description: Categoria atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProntuarioResponse'
+        '400':
+          description: Categoria ausente ou inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Perfil PACIENTE não pode reclassificar ou arquivar documentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Documento ou categoria não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/prontuarios/{id}/download:
+    get:
+      tags:
+        - Prontuarios
+      summary: Baixar arquivo PDF do prontuário (UC11)
+      description: >
+        ADMINISTRADOR e MEDICO baixam documentos de qualquer paciente; PACIENTE baixa apenas
+        os próprios documentos (RN06). Entrega o arquivo idêntico ao enviado com o nome original no
+        cabeçalho Content-Disposition (RN38) e dispara evento DOWNLOAD após localizar o recurso (RN16).
+      operationId: downloadProntuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Stream binário do PDF original
+          headers:
+            Content-Disposition:
+              description: Anexo com nome original preservado
+              schema:
+                type: string
+                example: attachment; filename="laudo-2026.pdf"
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Paciente tentou baixar documento pertencente a outro paciente (RN06)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Documento não encontrado ou excluído (RN09)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '500':
+          description: Metadado existente, porém arquivo físico ausente ou ilegível no storage (RN09)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/prontuarios/{id}:
+    delete:
+      tags:
+        - Prontuarios
+      summary: Excluir documento do prontuário em 3 passos (UC12)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO (RN06). Executa estritamente na ordem (RN10, RN37):
+        (1) grava evento EXCLUSAO síncrono (REQUIRES_NEW) em log_auditoria;
+        (2) remove arquivo físico do storage;
+        (3) preenche excluido_em no registro.
+      operationId: excluirProntuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Documento excluído com sucesso
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Perfil PACIENTE não pode excluir documentos (RN06)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Documento não encontrado ou já excluído
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '500':
+          description: Falha na gravação prévia de auditoria (aborta sem remover nada) ou falha ao remover arquivo físico (mantém registro ativo e tentativa auditada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NomeCategoria:
+      type: string
+      enum: [Exames, Laudos, Receituario, Arquivado]
+
+    SituacaoDocumento:
+      type: string
+      enum: [VIGENTE, SUBSTITUIDO, ARQUIVADO]
+
+    ReclassificarCategoriaRequest:
+      type: object
+      required:
+        - categoria
+      properties:
+        categoria:
+          $ref: '#/components/schemas/NomeCategoria'
+
+    ProntuarioResponse:
+      type: object
+      description: Metadados do documento cadastrado (nunca expõe nomeArquivoArmazenado — RN38)
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 105
+        pacienteId:
+          type: integer
+          format: int64
+          example: 12
+        categoria:
+          $ref: '#/components/schemas/NomeCategoria'
+        registroSubstituidoId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 101
+        tituloDocumento:
+          type: string
+          example: Laudo neuropsicológico
+        nomeArquivoOriginal:
+          type: string
+          example: laudo-2026.pdf
+        situacao:
+          $ref: '#/components/schemas/SituacaoDocumento'
+        criadoEm:
+          type: string
+          format: date-time
+        atualizadoEm:
+          type: string
+          format: date-time
+
+    CampoErroDTO:
+      type: object
+      properties:
+        campo:
+          type: string
+          example: arquivo
+        mensagem:
+          type: string
+          example: Apenas arquivos PDF válidos menores que 10 MB são aceitos
+
+    ErroResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        mensagem:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErroValidacaoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        mensagem:
+          type: string
+          example: Erro de validação no envio do documento
+        erros:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoErroDTO'
+        timestamp:
+          type: string
+          format: date-time

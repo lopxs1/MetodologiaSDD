@@ -1,0 +1,655 @@
+openapi: 3.0.3
+info:
+  title: AMDE Digital API — Agendamentos e Consultas
+  description: >
+    Contrato formal OpenAPI 3.0.3 da SPEC-004 (RF-05 / UC14 a UC19).
+    Define criação e edição de agendamentos com bloqueio de conflito de horário do profissional,
+    sessões individuais e em grupo, registro independente de presença, conclusão, cancelamento sem
+    exclusão física, visibilidade automática por perfil e auditoria assíncrona AGENDAMENTO.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desenvolvimento
+tags:
+  - name: Agendamentos
+    description: Gestão da agenda clínica e controle de presença (UC14 a UC19)
+
+paths:
+  /api/agendamentos:
+    post:
+      tags:
+        - Agendamentos
+      summary: Criar novo agendamento individual ou em grupo (UC14, UC18)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO (RN43). O MEDICO cria apenas para a própria agenda
+        (403 se indicar outro profissional). Valida início futuro (RN41), dataFim > dataInicio (RN12),
+        lista não vazia de pacientes únicos (RN40), pré-existência ativa (RN11) e ausência de conflito
+        sob lock pessimista do profissional (RN13, RNF-05.2). Inicia como AGENDADO e presenças false (RN14).
+        Dispara evento AGENDAMENTO (RN16).
+      operationId: criarAgendamento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriarAgendamentoRequest'
+      responses:
+        '201':
+          description: Agendamento criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoResponse'
+        '400':
+          description: Datas inválidas, início no passado, lista de pacientes vazia ou com duplicidade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: PACIENTE tentando criar, ou MEDICO tentando agendar para outro profissional (RN43)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Profissional ou algum paciente informado não existe ou está inativado (RN11, RN40)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Conflito de horário na agenda do profissional responsável (RN13, UC18)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+    get:
+      tags:
+        - Agendamentos
+      summary: Listar agendamentos com filtros e visibilidade por perfil (UC19)
+      description: >
+        Aplica visibilidade automática pelo perfil autenticado (RN15, RN43):
+        ADMINISTRADOR vê todos; MEDICO vê apenas os seus; PACIENTE vê apenas os que participa,
+        ocultando nomes e presenças de outros pacientes em sessões em grupo (RNF-05.3).
+      operationId: listarAgendamentos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: termo
+          in: query
+          required: false
+          description: Busca textual por nome do profissional ou paciente (até 100 caracteres)
+          schema:
+            type: string
+            maxLength: 100
+        - name: dataInicio
+          in: query
+          required: false
+          description: Início do filtro de período (ISO-8601 com fuso)
+          schema:
+            type: string
+            format: date-time
+        - name: dataFim
+          in: query
+          required: false
+          description: Fim do filtro de período (ISO-8601 com fuso; deve ser >= dataInicio)
+          schema:
+            type: string
+            format: date-time
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/StatusAgendamento'
+        - name: tipoAgendamento
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TipoAgendamento'
+        - name: funcionarioId
+          in: query
+          required: false
+          description: Filtro opcional por profissional (considerado apenas para ADMINISTRADOR)
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [dataInicio, dataFim, status, tipoAgendamento]
+            default: dataInicio
+        - name: direction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: ASC
+      responses:
+        '200':
+          description: Lista paginada de agendamentos filtrada pelo perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaAgendamentosResponse'
+        '400':
+          description: Período invertido (dataInicio > dataFim) ou parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/agendamentos/{id}:
+    get:
+      tags:
+        - Agendamentos
+      summary: Consultar detalhes de um agendamento específico (UC15)
+      description: >
+        ADMINISTRADOR acessa qualquer agendamento; MEDICO acessa apenas os de sua agenda (403 caso contrário);
+        PACIENTE acessa apenas agendamentos em que participa (403 caso contrário) e recebe somente a
+        própria entrada na lista de participantes (RN43, RNF-05.3).
+      operationId: consultarAgendamentoPorId
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Detalhes do agendamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Médico ou Paciente tentando consultar agendamento ao qual não está vinculado (RN15, RN43)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+    put:
+      tags:
+        - Agendamentos
+      summary: Editar horário, tipo e pacientes de um agendamento AGENDADO (UC16, UC18)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO responsável (403 se PACIENTE ou outro MEDICO).
+        Exige situação atual AGENDADO (409 se CONCLUIDO ou CANCELADO — RN39). O profissional
+        responsável é imutável na edição (RN40). Revalida datas futuras, conflito ignorando o
+        próprio ID (RN41) e dispara evento AGENDAMENTO (RN16).
+      operationId: editarAgendamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditarAgendamentoRequest'
+      responses:
+        '200':
+          description: Agendamento atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoResponse'
+        '400':
+          description: Datas inválidas, lista de pacientes inválida ou tentativa de alterar o profissional responsável
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: PACIENTE ou MEDICO de outra agenda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Agendamento ou paciente não encontrado/inativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Agendamento em situação final (CONCLUIDO/CANCELADO) ou conflito de horário (RN39, RN41)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+    delete:
+      tags:
+        - Agendamentos
+      summary: Cancelar agendamento AGENDADO preservando histórico (UC17)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO responsável. Altera o status de AGENDADO para CANCELADO
+        sem exclusão física (RN39), liberando o horário na agenda e disparando evento AGENDAMENTO (RN16).
+        Agendamentos já CONCLUIDO ou CANCELADO respondem 409 Conflict.
+      operationId: cancelarAgendamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Agendamento cancelado com sucesso
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: PACIENTE ou MEDICO de outra agenda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Agendamento já se encontra CONCLUIDO ou CANCELADO (RN39)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/agendamentos/{id}/presenca:
+    patch:
+      tags:
+        - Agendamentos
+      summary: Registrar ou corrigir presenças do profissional e de cada paciente (UC16)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO responsável. Permitido a partir do horário de início
+        (dataInicio) enquanto o agendamento estiver AGENDADO ou CONCLUIDO; antes do início ou em
+        CANCELADO responde 409 Conflict (RN42). Dispara evento AGENDAMENTO (RN16).
+      operationId: registrarPresencaAgendamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarPresencaRequest'
+      responses:
+        '200':
+          description: Presenças atualizadas com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoResponse'
+        '400':
+          description: Paciente informado não participa deste agendamento ou payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: PACIENTE ou MEDICO de outra agenda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Sessão ainda não iniciada ou em status CANCELADO (RN42)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/agendamentos/{id}/concluir:
+    patch:
+      tags:
+        - Agendamentos
+      summary: Concluir agendamento AGENDADO após o início da sessão (UC16)
+      description: >
+        Restrito a ADMINISTRADOR e MEDICO responsável. Transiciona AGENDADO para CONCLUIDO
+        somente a partir de dataInicio (antes do início ou se já CONCLUIDO/CANCELADO retorna 409 Conflict, RN42).
+        Não exige presenças previamente confirmadas e dispara evento AGENDAMENTO (RN16).
+      operationId: concluirAgendamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Agendamento concluído com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgendamentoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: PACIENTE ou MEDICO de outra agenda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Sessão ainda não iniciada ou já se encontra em situação final (RN39, RN42)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TipoAgendamento:
+      type: string
+      enum: [CONSULTA, EXAME, RETORNO, AVALIACAO, TERAPIA]
+
+    StatusAgendamento:
+      type: string
+      enum: [AGENDADO, CONCLUIDO, CANCELADO]
+
+    CriarAgendamentoRequest:
+      type: object
+      required:
+        - dataInicio
+        - dataFim
+        - tipoAgendamento
+        - pacientesIds
+      properties:
+        funcionarioId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Obrigatório para ADMINISTRADOR; para MEDICO, se informado deve corresponder ao próprio ID (ou assume o próprio automaticamente)
+          example: 3
+        dataInicio:
+          type: string
+          format: date-time
+          example: '2026-11-20T10:00:00-03:00'
+        dataFim:
+          type: string
+          format: date-time
+          example: '2026-11-20T11:00:00-03:00'
+        tipoAgendamento:
+          $ref: '#/components/schemas/TipoAgendamento'
+        pacientesIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: integer
+            format: int64
+          example: [12, 15]
+
+    EditarAgendamentoRequest:
+      type: object
+      required:
+        - dataInicio
+        - dataFim
+        - tipoAgendamento
+        - pacientesIds
+      properties:
+        funcionarioId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Imutável; envio de valor diferente do responsável atual é rejeitado com 400 (RN40)
+        dataInicio:
+          type: string
+          format: date-time
+        dataFim:
+          type: string
+          format: date-time
+        tipoAgendamento:
+          $ref: '#/components/schemas/TipoAgendamento'
+        pacientesIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: integer
+            format: int64
+
+    PresencaPacienteInputDTO:
+      type: object
+      required:
+        - pacienteId
+        - possuiPresenca
+      properties:
+        pacienteId:
+          type: integer
+          format: int64
+        possuiPresenca:
+          type: boolean
+
+    RegistrarPresencaRequest:
+      type: object
+      properties:
+        possuiPresencaFuncionario:
+          type: boolean
+          nullable: true
+        pacientes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresencaPacienteInputDTO'
+
+    AgendamentoPacienteDTO:
+      type: object
+      properties:
+        pacienteId:
+          type: integer
+          format: int64
+        nomePaciente:
+          type: string
+        possuiPresenca:
+          type: boolean
+
+    AgendamentoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 42
+        funcionarioId:
+          type: integer
+          format: int64
+          example: 3
+        nomeProfissional:
+          type: string
+          example: Profissional Sintético
+        cargoProfissional:
+          type: string
+          example: Psicologia
+        dataInicio:
+          type: string
+          format: date-time
+          example: '2026-11-20T10:00:00-03:00'
+        dataFim:
+          type: string
+          format: date-time
+          example: '2026-11-20T11:00:00-03:00'
+        tipoAgendamento:
+          $ref: '#/components/schemas/TipoAgendamento'
+        status:
+          $ref: '#/components/schemas/StatusAgendamento'
+        possuiPresencaFuncionario:
+          type: boolean
+        pacientes:
+          type: array
+          description: Para PACIENTE, contém exclusivamente o próprio paciente autenticado (RN43, RNF-05.3)
+          items:
+            $ref: '#/components/schemas/AgendamentoPacienteDTO'
+        criadoEm:
+          type: string
+          format: date-time
+        atualizadoEm:
+          type: string
+          format: date-time
+
+    ListaAgendamentosResponse:
+      type: object
+      properties:
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgendamentoResponse'
+        pagina:
+          type: integer
+          example: 0
+        tamanho:
+          type: integer
+          example: 10
+        totalItens:
+          type: integer
+          format: int64
+          example: 18
+        totalPaginas:
+          type: integer
+          example: 2
+
+    CampoErroDTO:
+      type: object
+      properties:
+        campo:
+          type: string
+          example: dataInicio
+        mensagem:
+          type: string
+          example: A data de início deve estar no futuro
+
+    ErroResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        mensagem:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErroValidacaoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        mensagem:
+          type: string
+          example: Erro de validação nos dados do agendamento
+        erros:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoErroDTO'
+        timestamp:
+          type: string
+          format: date-time

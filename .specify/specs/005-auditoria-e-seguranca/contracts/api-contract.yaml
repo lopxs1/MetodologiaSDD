@@ -1,0 +1,103 @@
+openapi: 3.0.3
+info:
+  title: AMDE Digital — Contrato Transversal de Auditoria e Segurança
+  description: >
+    Especificação OpenAPI 3.0.3 transversal da SPEC-005 (RF-06 / UC20).
+    Conforme RN17 (SPEC-001) e RN48 (SPEC-005), nenhum endpoint REST expõe leitura, edição
+    ou remoção da trilha de auditoria pela aplicação nesta versão (paths vazio).
+    Os schemas abaixo formalizam o contrato interno de eventos disparados por SPEC-001,
+    SPEC-003 e SPEC-004, os cabeçalhos HTTP de rastreamento de IP e a garantia de
+    interrupção (HTTP 500) quando falha o registro prévio em DELETE /api/prontuarios/{id} (RN44).
+  version: 1.0.0
+tags:
+  - name: AuditoriaTransversal
+    description: Catálogo interno de eventos append-only (sem exposição de rotas HTTP)
+
+paths: {}
+
+components:
+  parameters:
+    XForwardedForHeader:
+      name: X-Forwarded-For
+      in: header
+      required: false
+      description: >
+        Cabeçalho processado exclusivamente quando a requisição provém de proxy reverso confiável
+        da infraestrutura (CloudFront/ALB/Nginx). Caso ausente ou de origem não confiável, utiliza-se
+        o endereço remoto direto da conexão (RN45, Seção 8).
+      schema:
+        type: string
+        example: '192.0.2.10'
+
+  schemas:
+    AcaoAuditoria:
+      type: string
+      description: Catálogo fechado de ações auditáveis (RN46)
+      enum:
+        - LOGIN
+        - UPLOAD
+        - DOWNLOAD
+        - EXCLUSAO
+        - AGENDAMENTO
+
+    PadraoRecursoAuditoria:
+      type: string
+      minLength: 1
+      maxLength: 255
+      description: >
+        Identificador técnico minimizado sem dados pessoais ou conteúdo clínico (RN47):
+        - LOGIN: usuario:{id}:LOGIN
+        - EXCLUSAO usuário: usuario:{id}:EXCLUSAO
+        - UPLOAD novo/substituição: documento:{id}:UPLOAD | documento:{id}:SUBSTITUICAO
+        - DOWNLOAD: documento:{id}:DOWNLOAD
+        - EXCLUSAO documento: documento:{id}:EXCLUSAO
+        - AGENDAMENTO: agendamento:{id}:{CRIAR|EDITAR|CANCELAR|CONCLUIR|PRESENCA}
+      pattern: '^(usuario|documento|agendamento):[0-9]+(:[A-Z_]+)?$'
+      example: documento:101:UPLOAD
+
+    EventoAuditoriaInterno:
+      type: object
+      description: Estrutura canônica persistida de forma imutável (append-only) em amde_digital.log_auditoria
+      required:
+        - usuarioId
+        - acao
+        - recurso
+        - criadoEm
+      properties:
+        usuarioId:
+          type: integer
+          format: int64
+          description: Identificador do usuário ativo responsável pela operação (nunca nulo)
+          example: 7
+        acao:
+          $ref: '#/components/schemas/AcaoAuditoria'
+        recurso:
+          $ref: '#/components/schemas/PadraoRecursoAuditoria'
+        ipOrigem:
+          type: string
+          nullable: true
+          minLength: 3
+          maxLength: 45
+          description: >
+            IPv4 ou IPv6 do cliente que originou a requisição HTTP web (obrigatório em chamadas HTTP;
+            anulável apenas quando disparado por rotina interna ou teste sem requisição HTTP — UC20).
+          example: '192.0.2.10'
+        criadoEm:
+          type: string
+          format: date-time
+          description: Instante exato da operação capturado na thread chamadora (RNF-06.5)
+          example: '2026-11-18T16:20:00-03:00'
+
+    ErroFalhaAuditoriaPreviaResponse:
+      type: object
+      description: Resposta devolvida exclusivamente quando a gravação síncrona prévia falha em DELETE /api/prontuarios/{id} (RN37, RN44)
+      properties:
+        status:
+          type: integer
+          example: 500
+        mensagem:
+          type: string
+          example: Não foi possível concluir a operação devido a uma falha interna de auditoria
+        timestamp:
+          type: string
+          format: date-time

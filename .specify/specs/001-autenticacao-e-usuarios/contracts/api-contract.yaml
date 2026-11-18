@@ -1,0 +1,756 @@
+openapi: 3.0.3
+info:
+  title: AMDE Digital API — Autenticação e Gestão de Usuários
+  description: >
+    Contrato formal OpenAPI 3.0.3 da SPEC-001 (RF-01, RF-02 / UC01 a UC07).
+    Define autenticação stateless JWT (expiração de 8h sem renovação), controle de acesso
+    por perfil (ADMINISTRADOR, MEDICO, PACIENTE) e gestão completa de usuários com
+    especializações 1:1 (Funcionario e Paciente).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desenvolvimento
+tags:
+  - name: Autenticacao
+    description: Login JWT stateless (UC01, UC02, UC03)
+  - name: Usuarios
+    description: Gestão administrativa de usuários (UC04, UC05, UC06, UC07 — exclusivo ADMINISTRADOR)
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Autenticacao
+      summary: Autenticar usuário e emitir token JWT (UC01–UC03)
+      description: >
+        Autentica usuário ativo por e-mail normalizado e senha BCrypt (RN01, RN18).
+        Emite token JWT válido por 8 horas (28.800s) sem renovação automática (RN20) e dispara
+        evento assíncrono LOGIN em log_auditoria (RN16). Qualquer falha de credencial ou conta
+        inativada retorna 401 com mensagem genérica única (RN19, RNF-01.3).
+      operationId: fazerLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Campos obrigatórios ausentes ou formato de e-mail inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Credenciais inválidas ou usuário inativado (resposta única e genérica)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+              example:
+                status: 401
+                mensagem: E-mail ou senha inválidos
+                timestamp: '2026-11-18T16:00:00-03:00'
+
+  /api/usuarios/registro:
+    post:
+      tags:
+        - Usuarios
+      summary: Cadastrar novo usuário e especialização 1:1 (UC04)
+      description: >
+        Exclusivo do perfil ADMINISTRADOR (RN03). Cria o usuário e, na mesma transação,
+        sua especialização obrigatória quando aplicável: Funcionario (MEDICO) ou Paciente (PACIENTE) (RN04, RN23).
+        Valida unicidade de e-mail entre usuários ativos (RN02) e limites de senha (8 chars até 72 bytes UTF-8, RN21).
+      operationId: cadastrarUsuario
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CadastrarUsuarioRequest'
+      responses:
+        '201':
+          description: Usuário cadastrado com sucesso (celular retornado mascarado por padrão)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDetalheResponse'
+        '400':
+          description: Dados inválidos, senha fora dos limites da RN21 ou especialização incompatível com o perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Token ausente, expirado, adulterado ou usuário autenticado inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui perfil ADMINISTRADOR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: E-mail já utilizado por outro usuário ativo (RN02)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/usuarios:
+    get:
+      tags:
+        - Usuarios
+      summary: Listar usuários ativos com busca, filtro, ordenação, paginação e totalizadores (UC05)
+      description: >
+        Exclusivo do perfil ADMINISTRADOR (RN03). Retorna somente usuários ativos (excluido_em IS NULL),
+        totalizadores agregados por perfil e celular sempre mascarado (RN28).
+      operationId: listarUsuarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: termo
+          in: query
+          description: Termo de busca textual por nome ou e-mail (até 100 caracteres, insensível a maiúsculas e acentos)
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: nivelAcesso
+          in: query
+          description: Filtro opcional por perfil de acesso
+          required: false
+          schema:
+            $ref: '#/components/schemas/NivelAcesso'
+        - name: page
+          in: query
+          description: Índice da página (base 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Quantidade de itens por página (padrão 10, máximo 50)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: sort
+          in: query
+          description: Campo de ordenação
+          required: false
+          schema:
+            type: string
+            enum: [nome, email, nivelAcesso, criadoEm]
+            default: nome
+        - name: direction
+          in: query
+          description: Direção da ordenação
+          required: false
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: ASC
+      responses:
+        '200':
+          description: Lista paginada de usuários ativos e totalizadores por perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaUsuariosResponse'
+        '400':
+          description: Parâmetros de consulta inválidos (ex. termo acima de 100 caracteres)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Token ausente, expirado, adulterado ou usuário autenticado inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui perfil ADMINISTRADOR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+  /api/usuarios/{id}:
+    get:
+      tags:
+        - Usuarios
+      summary: Consultar detalhes de um usuário ativo (UC05)
+      description: >
+        Exclusivo do perfil ADMINISTRADOR (RN03). Retorna os dados completos e a especialização
+        do usuário ativo. O celular é mascarado por padrão e revelado apenas quando revelarCelular=true (RN28).
+      operationId: consultarUsuarioPorId
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: revelarCelular
+          in: query
+          required: false
+          description: Quando true, retorna o celular completo do usuário no detalhe (RN28)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Detalhes do usuário ativo encontrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDetalheResponse'
+        '401':
+          description: Token ausente, expirado, adulterado ou usuário autenticado inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui perfil ADMINISTRADOR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Usuário não encontrado ou inativado logicamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+    put:
+      tags:
+        - Usuarios
+      summary: Atualizar usuário ativo e sua especialização (UC06)
+      description: >
+        Exclusivo do perfil ADMINISTRADOR (RN03). Atualiza dados cadastrais, senha opcional (RN21)
+        e dados da especialização. O perfil (nivelAcesso) é imutável após o cadastro (RN24).
+      operationId: atualizarUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizarUsuarioRequest'
+      responses:
+        '200':
+          description: Usuário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDetalheResponse'
+        '400':
+          description: Dados inválidos ou tentativa de alteração de perfil (RN24)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Token ausente, expirado, adulterado ou usuário autenticado inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui perfil ADMINISTRADOR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Usuário não encontrado ou já inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Novo e-mail já utilizado por outro usuário ativo (RN02)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+    delete:
+      tags:
+        - Usuarios
+      summary: Excluir logicamente usuário ativo e sua especialização (UC07)
+      description: >
+        Exclusivo do perfil ADMINISTRADOR (RN03). Preenche excluido_em no usuário e em sua
+        especialização (RN25) e dispara evento assíncrono EXCLUSAO (RN16). Impede autoexclusão (RN26)
+        e exclusão de MEDICO/PACIENTE com agendamentos em status AGENDADO (RN27).
+      operationId: excluirUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Usuário inativado logicamente com sucesso
+        '401':
+          description: Token ausente, expirado, adulterado ou usuário autenticado inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui perfil ADMINISTRADOR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Usuário não encontrado ou já inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '409':
+          description: Tentativa de autoexclusão (RN26) ou usuário possui agendamentos AGENDADO (RN27)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NivelAcesso:
+      type: string
+      enum: [ADMINISTRADOR, MEDICO, PACIENTE]
+
+    GrauSuporte:
+      type: string
+      enum: [NIVEL_1, NIVEL_2, NIVEL_3]
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - senha
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 254
+          example: admin.teste@amde.example.org
+        senha:
+          type: string
+          format: password
+          minLength: 1
+          example: SenhaForte@2026
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token JWT stateless válido por 8 horas
+        tipo:
+          type: string
+          example: Bearer
+        expiraEm:
+          type: string
+          format: date-time
+          example: '2026-11-19T00:00:00-03:00'
+        usuario:
+          $ref: '#/components/schemas/UsuarioSessaoDTO'
+
+    UsuarioSessaoDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        nome:
+          type: string
+          example: Administrador Sintético
+        email:
+          type: string
+          format: email
+          example: admin.teste@amde.example.org
+        nivelAcesso:
+          $ref: '#/components/schemas/NivelAcesso'
+
+    FuncionarioInputDTO:
+      type: object
+      required:
+        - cargo
+      properties:
+        cargo:
+          type: string
+          minLength: 2
+          maxLength: 80
+          example: Psicologia
+        crm:
+          type: string
+          nullable: true
+          minLength: 3
+          maxLength: 30
+          example: CRP/SP 06/12345
+
+    PacienteInputDTO:
+      type: object
+      required:
+        - grauSuporte
+      properties:
+        grauSuporte:
+          $ref: '#/components/schemas/GrauSuporte'
+        descricao:
+          type: string
+          nullable: true
+          maxLength: 5000
+          example: Acompanhamento multidisciplinar inicial.
+
+    CadastrarUsuarioRequest:
+      type: object
+      required:
+        - nome
+        - email
+        - senha
+        - nivelAcesso
+      properties:
+        nome:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Ana Clara Souza
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 254
+          example: ana.souza@amde.example.org
+        senha:
+          type: string
+          format: password
+          minLength: 8
+          description: Mínimo 8 caracteres, não formada apenas por espaços e máximo 72 bytes UTF-8 (RN21)
+          example: SenhaSegura@2026
+        nivelAcesso:
+          $ref: '#/components/schemas/NivelAcesso'
+        dataNascimento:
+          type: string
+          format: date
+          nullable: true
+          example: '1990-05-10'
+        numCelular:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{10,11}$'
+          description: Apenas dígitos (10 ou 11 caracteres com DDD, sem máscara)
+          example: '15999991234'
+        pais:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 60
+          default: Brasil
+        estado:
+          type: string
+          nullable: true
+          pattern: '^[A-Z]{2}$'
+          example: SP
+        cidade:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 100
+          example: Sorocaba
+        rua:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 150
+          example: Rua das Flores, 120
+        funcionario:
+          allOf:
+            - $ref: '#/components/schemas/FuncionarioInputDTO'
+          nullable: true
+          description: Obrigatório exclusivamente quando nivelAcesso = MEDICO
+        paciente:
+          allOf:
+            - $ref: '#/components/schemas/PacienteInputDTO'
+          nullable: true
+          description: Obrigatório exclusivamente quando nivelAcesso = PACIENTE
+
+    AtualizarUsuarioRequest:
+      type: object
+      required:
+        - nome
+        - email
+      properties:
+        nome:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 254
+        senha:
+          type: string
+          format: password
+          nullable: true
+          minLength: 8
+          description: Opcional na atualização; quando informada, segue regras da RN21
+        nivelAcesso:
+          $ref: '#/components/schemas/NivelAcesso'
+          nullable: true
+          description: Imutável; envio de valor diferente do atual é rejeitado com 400 (RN24)
+        dataNascimento:
+          type: string
+          format: date
+          nullable: true
+        numCelular:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{10,11}$'
+        pais:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 60
+        estado:
+          type: string
+          nullable: true
+          pattern: '^[A-Z]{2}$'
+        cidade:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 100
+        rua:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 150
+        funcionario:
+          allOf:
+            - $ref: '#/components/schemas/FuncionarioInputDTO'
+          nullable: true
+        paciente:
+          allOf:
+            - $ref: '#/components/schemas/PacienteInputDTO'
+          nullable: true
+
+    FuncionarioResumoDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        cargo:
+          type: string
+        crm:
+          type: string
+          nullable: true
+
+    PacienteResumoDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        grauSuporte:
+          $ref: '#/components/schemas/GrauSuporte'
+        descricao:
+          type: string
+          nullable: true
+
+    UsuarioResumoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+        nivelAcesso:
+          $ref: '#/components/schemas/NivelAcesso'
+        numCelular:
+          type: string
+          nullable: true
+          description: Sempre mascarado na listagem (ex. (15) *****-1234)
+          example: '(15) *****-1234'
+        criadoEm:
+          type: string
+          format: date-time
+
+    UsuarioDetalheResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+        nivelAcesso:
+          $ref: '#/components/schemas/NivelAcesso'
+        dataNascimento:
+          type: string
+          format: date
+          nullable: true
+        numCelular:
+          type: string
+          nullable: true
+          description: Mascarado por padrão; completo quando revelarCelular=true
+          example: '(15) *****-1234'
+        celularMascarado:
+          type: boolean
+          example: true
+        pais:
+          type: string
+          nullable: true
+        estado:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        rua:
+          type: string
+          nullable: true
+        funcionario:
+          allOf:
+            - $ref: '#/components/schemas/FuncionarioResumoDTO'
+          nullable: true
+        paciente:
+          allOf:
+            - $ref: '#/components/schemas/PacienteResumoDTO'
+          nullable: true
+        criadoEm:
+          type: string
+          format: date-time
+        atualizadoEm:
+          type: string
+          format: date-time
+
+    TotalizadoresPerfilDTO:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        administradores:
+          type: integer
+          format: int64
+        medicos:
+          type: integer
+          format: int64
+        pacientes:
+          type: integer
+          format: int64
+
+    ListaUsuariosResponse:
+      type: object
+      properties:
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsuarioResumoResponse'
+        pagina:
+          type: integer
+          example: 0
+        tamanho:
+          type: integer
+          example: 10
+        totalItens:
+          type: integer
+          format: int64
+          example: 25
+        totalPaginas:
+          type: integer
+          example: 3
+        totalizadores:
+          $ref: '#/components/schemas/TotalizadoresPerfilDTO'
+
+    CampoErroDTO:
+      type: object
+      properties:
+        campo:
+          type: string
+          example: email
+        mensagem:
+          type: string
+          example: E-mail inválido
+
+    ErroResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        mensagem:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErroValidacaoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        mensagem:
+          type: string
+          example: Erro de validação nos dados informados
+        erros:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoErroDTO'
+        timestamp:
+          type: string
+          format: date-time
