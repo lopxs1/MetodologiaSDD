@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/amde_digital?currentSchema=amde_digital}
+    username: ${TEST_DB_APP_USER:amde_digital_app}
+    password: ${TEST_DB_APP_PASSWORD:CHANGE_ME_APP_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: amde_digital
+        jdbc:
+          time_zone: America/Sao_Paulo
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    user: ${TEST_DB_OWNER_USER:amde_digital_owner}
+    password: ${TEST_DB_OWNER_PASSWORD:CHANGE_ME_OWNER_PASSWORD}
+    default-schema: amde_digital
+    liquibase-schema: amde_digital
+
+amde:
+  security:
+    jwt:
+      secret: chave-ficticia-local-com-no-minimo-256-bits-para-desenvolvimento-sdd
+      expiration-ms: 28800000
+    trusted-proxies: 127.0.0.1,::1,0:0:0:0:0:0:0:1,10.0.0.1
+    cors:
+      allowed-origins: http://localhost:5173

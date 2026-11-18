@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: NATIVE
+
+spring:
+  application:
+    name: amde-digital-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:amde_digital}?currentSchema=${DB_SCHEMA:amde_digital}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_APP_USER:amde_digital_app}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_APP_PASSWORD:CHANGE_ME_APP_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        default_schema: ${SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA:amde_digital}
+        jdbc:
+          time_zone: America/Sao_Paulo
+  liquibase:
+    enabled: ${SPRING_LIQUIBASE_ENABLED:true}
+    change-log: ${SPRING_LIQUIBASE_CHANGE_LOG:classpath:db/changelog/db.changelog-master.yaml}
+    user: ${SPRING_LIQUIBASE_USER:${DB_OWNER_USER:amde_digital_owner}}
+    password: ${SPRING_LIQUIBASE_PASSWORD:${DB_OWNER_PASSWORD:CHANGE_ME_OWNER_PASSWORD}}
+    default-schema: ${SPRING_LIQUIBASE_DEFAULT_SCHEMA:amde_digital}
+    liquibase-schema: ${SPRING_LIQUIBASE_LIQUIBASE_SCHEMA:amde_digital}
+  jackson:
+    time-zone: America/Sao_Paulo
+
+amde:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:chave-ficticia-local-com-no-minimo-256-bits-para-desenvolvimento-sdd}
+      expiration-ms: ${JWT_EXPIRATION_MS:28800000}
+    trusted-proxies: ${TRUSTED_PROXIES:127.0.0.1,::1,0:0:0:0:0:0:0:1}
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}

@@ -1,62 +1,46 @@
-# Frontend
+# Frontend — AMDE Digital
 
-Use este guia somente para a interface web. Para aplicativo Android/iOS, use `mobile/README.md`. Preencha os passos reais para configurar, executar e validar este componente; não declare comandos que ainda não foram testados pela equipe.
+Interface web do sistema **AMDE Digital**, construída com React 18, TypeScript, Vite e Tailwind CSS configurado a partir de [`design/tokens.json`](../design/tokens.json).
 
-## Responsabilidade e limites
+## Responsabilidade e Fluxos (Incremento 1 — SPEC-001)
 
-- **Usuários atendidos:** [perfis]
-- **Fluxos cobertos:** [casos de uso/requisitos]
-- **Estado atual:** [protótipo / em andamento / disponível / não aplicável]
+- **Perfis atendidos:** `ADMINISTRADOR`, `MEDICO` e `PACIENTE`.
+- **Rotas implementadas:**
+  - `/login` (`LoginPage`): autenticação JWT stateless com validação inline (`onBlur` e envio), submissão via `Enter` e redirecionamento por perfil.
+  - `/usuarios` (`UsuariosPage`, exclusivo `ADMINISTRADOR`): 4 cards totalizadores, busca por nome/e-mail, filtro por perfil, ordenação por colunas (`ASC`/`DESC`), paginação, modal de cadastro/edição com especialização 1:1 (`Funcionario` / `Paciente`), modal de detalhes com ação **Revelar celular** (`RN28`) e confirmação de inativação lógica com backdrop e suporte à tecla `Esc`.
+  - `/dashboard`, `/pacientes` e `/agendamentos`: rotas protegidas por RBAC com placeholders estruturais para os incrementos seguintes.
 
 ## Pré-requisitos
 
-| Dependência | Versão suportada | Como verificar |
-|---|---|---|
-| Runtime | [ex.: Node.js] | [comando] |
-| Gerenciador de pacotes | [ex.: npm/pnpm] | [comando] |
+- Node.js 18+ e npm 9+
+- Backend Spring Boot em execução (padrão `http://localhost:8080`)
 
-## Configuração, instalação e execução
+## Configuração e Comandos
 
-Liste variáveis públicas necessárias para a interface. Não coloque segredos no frontend: qualquer variável compilada para o navegador pode ser visualizada pelo usuário.
+Copie `.env.example` para `.env` e ajuste o endereço da API pública (sem segredos):
 
 ```text
-Instalação: [comando real]
-Execução local: [comando real]
-Build: [comando real]
-Testes: [comando real]
+VITE_API_BASE_URL=http://localhost:8080
+VITE_APP_NAME="AMDE Digital"
+VITE_ENVIRONMENT=development
+```
 
-
-Informe a URL local, como configurar a URL da API e quais serviços precisam estar ativos. Use contas e dados fictícios.
-
-## Validação da interface
-
-Registre os fluxos e estados cobertos: carregando, vazio, sucesso, erro, permissão negada e indisponibilidade do backend. Inclua observações sobre teclado, foco, contraste, responsividade e acessibilidade conforme aplicável.
-
-## Relação com a documentação
-
-- **Requisitos:** [especificação de requisitos](../.specify/reference/requirements/especificacao-requisitos.md).
-- **Arquitetura:** [visão arquitetural](../.specify/reference/architecture/visao-arquitetural.md).
-- **Design system:** [diretrizes de interface](../.specify/memory/design-system.md) e [tokens](../design/tokens.json).
-- **Especificações de funcionalidades e validação:** consulte `.specify/specs/`.
-
-## Exemplo preenchido (fictício; stack ilustrativa)
-
-> Exemplo para uma interface React/Vite. Use somente se as ferramentas e scripts existirem no projeto da equipe.
-
-- **Usuários atendidos:** funcionários que registram pedidos de materiais.
-- **Fluxos cobertos:** consultar catálogo e enviar pedido.
-- **Estado atual:** protótipo conectado a uma API local fictícia.
-- **Pré-requisitos:** Node.js 22 e npm 10 (versões ilustrativas).
-
-Exemplos de comandos, somente se definidos no `package.json`:
+Comandos definidos em `package.json`:
 
 ```text
-npm ci
+npm install
 npm run dev
 npm run build
-npm tes
+npm test
+```
 
+## Estados de Interface e Acessibilidade
 
-Exemplo de variável pública para endereço local da API: `VITE_API_BASE_URL=http://localhost:8000`. Não coloque tokens ou senhas nesse tipo de variável: o valor pode ser incluído no código entregue ao navegador.
+- **Estados obrigatórios:** `Skeleton` durante carregamento, estado vazio com orientação, alerta de erro com botão **Tentar novamente** e listagem em sucesso.
+- **WCAG 2.1 AA e LGPD:** rótulos associados (`htmlFor`), foco visível, fechamento de modais por `Esc` e mascaramento padrão do celular na listagem e no detalhe.
 
-Exemplo de evidência: “No cenário de catálogo vazio, a interface exibe orientação para tentar novamente; conferido manualmente em [commit fictício] com dados sintéticos.” Não use esta frase como teste realizado pela sua equipe.
+## Referências
+
+- [Especificação SPEC-001](../.specify/specs/001-autenticacao-e-usuarios/spec.md)
+- [Diretrizes de Design System](../.specify/memory/design-system.md)
+- [Tokens Visuais](../design/tokens.json)

@@ -30,6 +30,7 @@ venv/
 # Java / build
 target/
 build/
+.tools/
 
 # JavaScript / frontend
 node_modules/
