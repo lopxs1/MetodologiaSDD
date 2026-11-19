@@ -2,7 +2,7 @@
 
 > **Projeto Integrador / Trabalho de Graduação — ADS (Fatec Sorocaba)**  
 > **Metodologia de Engenharia:** Spec-Driven Development (SDD) com apoio de IA Generativa  
-> **Status:** Fase de Especificação e Estruturação SDD
+> **Status:** Implementado (Incrementos 1 a 5 concluídos — SPEC-001 a SPEC-006)
 
 ---
 
@@ -62,16 +62,23 @@ O projeto adota uma separação estrita entre a memória global, os pacotes incr
 │   │   ├── data-model/                 # DER e dicionário de dados
 │   │   └── references/                 # Monografia e diretrizes de referência
 │   └── specs/                          # Especificações incrementais por funcionalidade
-│       └── _template/                  # Template base para novas specs
+│       ├── 001-autenticacao-e-usuarios/  # SPEC-001: Login JWT, usuários e RBAC
+│       ├── 002-gestao-de-pacientes/      # SPEC-002: Prontuário e gestão de pacientes TEA
+│       ├── 003-prontuarios-e-anexos/     # SPEC-003: Anexos PDF, categorias e versionamento
+│       ├── 004-agendamentos-e-consultas/ # SPEC-004: Agenda clínica, concorrência e presença
+│       ├── 005-auditoria-e-seguranca/    # SPEC-005: Trilha de auditoria assíncrona (LGPD/CFM)
+│       ├── 006-dashboard-gerencial/      # SPEC-006: Indicadores e gráficos gerenciais
+│       └── _template/                    # Template base para novas specs
 ├── AGENTS.md                           # Regras de banco PostgreSQL 18, exceções JPA/Hibernate e checklist de PR
 ├── .sqlfluff                           # Configuração de lint SQL (dialeto postgres, minúsculas)
 ├── docker-compose.yml                  # Container PostgreSQL 18 (Debian + ICU pt-BR) com bootstrap automático
-├── data/                               # Scripts de bootstrap (00_bootstrap.sql) e auditoria (verificacao.sql)
+├── data/                               # Scripts de bootstrap (00_bootstrap.sql), seeds sintéticos e auditoria (verificacao.sql)
 ├── design/
 │   └── tokens.json                     # Design tokens legíveis por máquina
 ├── backend/                            # Código-fonte da API Spring Boot e changelogs Liquibase
 ├── frontend/                           # Código-fonte da aplicação Web React
-└── mobile/                             # Código-fonte do aplicativo mobile (quando aplicável)
+├── application/                        # Pasta do template original (fora de escopo; sistema dividido em backend/ e frontend/)
+└── mobile/                             # Pasta do template original (fora de escopo; sem cliente móvel nesta entrega)
 ```
 
 Os artefatos de engenharia antes mantidos em `docs/` agora ficam centralizados em [`.specify/reference/`](.specify/reference/). Templates genéricos e exemplos fictícios foram removidos.

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { CalendarDays, LayoutDashboard, LogOut, Menu, UserCheck, Users, X } from 'lucide-react';
+import { CalendarDays, FileHeart, LayoutDashboard, LogOut, Menu, UserCheck, Users, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { NivelAcesso } from '@/types/usuario';
 
@@ -13,7 +13,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: 'Visão Geral',
+    label: 'Visão Geral / Dashboard',
     to: '/dashboard',
     icon: LayoutDashboard,
     perfis: ['ADMINISTRADOR'],
@@ -23,6 +23,12 @@ const NAV_ITEMS: NavItem[] = [
     to: '/pacientes',
     icon: UserCheck,
     perfis: ['ADMINISTRADOR', 'MEDICO'],
+  },
+  {
+    label: 'Meu Prontuário',
+    to: '/meu-prontuario',
+    icon: FileHeart,
+    perfis: ['PACIENTE'],
   },
   {
     label: 'Agendamentos',

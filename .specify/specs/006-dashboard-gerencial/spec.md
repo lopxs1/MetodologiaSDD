@@ -1,7 +1,7 @@
 # Especificação Funcional: Dashboard Gerencial
 
 > **ID da Spec:** `SPEC-006`  
-> **Status:** Rascunho  
+> **Status:** Implementado  
 > **Autores / Responsáveis:** Gustavo Ferreira Lopes, Helena Melchiades de Faria, Kaiky Saquette Pereira, Vinicius Firmino Oliveira de Souza  
 > **Data:** 2026-11-18  
 > **Foco:** **O Quê e Por Quê** (Linguagem de Negócio, Requisitos, Regras e Critérios de Aceite)  

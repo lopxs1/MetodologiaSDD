@@ -1,7 +1,7 @@
 # Checklist de Tarefas: Autenticação, Controle de Acesso e Gestão de Usuários
 
 > **ID da Spec:** `SPEC-001`  
-> **Status Geral:** `23 / 33 Concluídas (validação em runtime pendente de Docker/PostgreSQL/Browser)`  
+> **Status Geral:** `28 / 33 Concluídas (Docker/PG 18, Liquibase, ddl-auto=validate, verificacao.sql, sqlfluff, mvn test e vitest run validados)`  
 > **Responsáveis:** Gustavo Ferreira Lopes, Helena Melchiades de Faria, Kaiky Saquette Pereira, Vinicius Firmino Oliveira de Souza  
 > **Origem dos Requisitos:** [spec.md](spec.md) | **Plano Técnico:** [plan.md](plan.md) | **Modelo de Dados:** [data-model.md](data-model.md) | **Contratos:** [contracts/api-contract.yaml](contracts/api-contract.yaml)
 
@@ -15,9 +15,9 @@
 ---
 
 ## 💾 Fase 2: Banco de Dados, Verificação e Seeds Sintéticos
-- [ ] **T02.1:** Confirmar o bootstrap local (`docker compose up -d postgres`) e a aplicação da migration inicial [`001_esquema_inicial.sql`](../../../backend/src/main/resources/db/changelog/migrations/001_esquema_inicial.sql) pela role `amde_digital_owner`.
-- [ ] **T02.2:** Validar os scripts SQL executando `sqlfluff lint --dialect postgres backend/src/main/resources/db/changelog/migrations/ data/verificacao.sql`.
-- [ ] **T02.3:** Executar [`data/verificacao.sql`](../../../data/verificacao.sql) garantindo **zero linhas** nas 9 verificações estruturais e revisar o inventário `[LGPD: pessoal]` / `[LGPD: sensível]` das tabelas `usuario`, `funcionario` e `paciente`.
+- [x] **T02.1:** Confirmar o bootstrap local (`docker compose up -d postgres`) e a aplicação da migration inicial [`001_esquema_inicial.sql`](../../../backend/src/main/resources/db/changelog/migrations/001_esquema_inicial.sql) pela role `amde_digital_owner`.
+- [x] **T02.2:** Validar os scripts SQL executando `sqlfluff lint --dialect postgres backend/src/main/resources/db/changelog/migrations/ data/verificacao.sql`.
+- [x] **T02.3:** Executar [`data/verificacao.sql`](../../../data/verificacao.sql) garantindo **zero linhas** nas 9 verificações estruturais e revisar o inventário `[LGPD: pessoal]` / `[LGPD: sensível]` das tabelas `usuario`, `funcionario` e `paciente`.
 - [x] **T02.4:** Criar arquivo de seed sintético local (`data/seeds/001_usuarios_seed_sintetico.sql`) com usuários fictícios (`ADMINISTRADOR`, `MEDICO` e `PACIENTE`) e procedimento seguro de provisionamento do primeiro administrador sem versionar senhas ou dados reais.
 
 ---
@@ -51,7 +51,7 @@
 - [x] **T05.1:** Implementar testes unitários (JUnit 5 + Mockito) para `AuthService`, `JwtService`, `UsuarioService` e `CelularMasker` cobrindo todas as RNs (`RN01`–`RN04`, `RN17`–`RN28`). *(`CelularMaskerTest`, `AuthServiceTest` e `UsuarioServiceTest` implementados; execução Maven pendente na máquina com JDK.)*
 - [ ] **T05.2:** Implementar testes de integração (Spring Boot Test + Testcontainers PostgreSQL 18) para todos os endpoints de `/api/auth/login` e `/api/usuarios/**`, incluindo revogação imediata pós-exclusão (`RN18`) e recadastro de e-mail liberado (`RN25`).
 - [ ] **T05.3:** Implementar teste automatizado de concorrência validando dois cadastros simultâneos com o mesmo e-mail (`1` sucesso `201` + `1` `409 Conflict` — `RNF-02.4`) e verificação de resposta uniforme `401` (`RNF-01.3`).
-- [ ] **T05.4:** Implementar testes de front-end (Vitest + Testing Library) para formulários, redirecionamentos, estados de tela e mascaramento/revelação de celular.
+- [x] **T05.4:** Implementar testes de front-end (Vitest + Testing Library) para formulários, redirecionamentos, estados de tela e mascaramento/revelação de celular. *(`Incremento1.test.tsx` executado e aprovado via `vitest run`.)*
 - [ ] **T05.5:** Validar os **18 cenários BDD** de [`spec.md`](spec.md) em testes automatizados E2E/aceitação e auditar logs e payloads contra vazamento de senhas ou dados pessoais (`RNF-01.1`, `RNF-02.2`).
 - [ ] **T05.6:** Validar acessibilidade WCAG 2.1 AA com Axe DevTools (`RNF-01.6`) e desempenho p95 < 500 ms com massa sintética (`RNF-01.5`, `RNF-02.1`).
 
@@ -59,5 +59,5 @@
 
 ## 🏁 Fase 6: Conclusão e Revisão
 - [x] **T06.1:** Confirmar alinhamento entre código implementado, [`contracts/api-contract.yaml`](contracts/api-contract.yaml), [`data-model.md`](data-model.md) e [`.specify/memory/domain-model.md`](../../memory/domain-model.md).
-- [ ] **T06.2:** Preencher o Checklist de Revisão de Banco de Dados ([`AGENTS.md`](../../../AGENTS.md)) e validar o `ddl-auto=validate` com `amde_digital_app`.
+- [x] **T06.2:** Preencher o Checklist de Revisão de Banco de Dados ([`AGENTS.md`](../../../AGENTS.md)) e validar o `ddl-auto=validate` com `amde_digital_app`.
 - [ ] **T06.3:** Realizar Code Review final, validar todos os itens da *Definition of Done* em [`plan.md`](plan.md) e atualizar o status da `SPEC-001` para `Implementado`.

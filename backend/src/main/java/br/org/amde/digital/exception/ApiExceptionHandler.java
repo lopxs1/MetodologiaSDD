@@ -8,9 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -104,5 +107,54 @@ public class ApiExceptionHandler {
                         ex.getMessage(),
                         OffsetDateTime.now()
                 ));
+    }
+
+    @ExceptionHandler(ErroStorageException.class)
+    public ResponseEntity<ErroResponse> handleErroStorage(ErroStorageException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErroResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Não foi possível processar o arquivo do prontuário",
+                        OffsetDateTime.now()
+                ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErroValidacaoResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        List<CampoErroDTO> erros = List.of(new CampoErroDTO("arquivo", "Arquivo deve ter tamanho inferior a 10 MB"));
+        return ResponseEntity.badRequest().body(
+                new ErroValidacaoResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Arquivo excede o limite máximo permitido",
+                        erros,
+                        OffsetDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErroValidacaoResponse> handleMissingPart(MissingServletRequestPartException ex) {
+        List<CampoErroDTO> erros = List.of(new CampoErroDTO(ex.getRequestPartName(), "Campo obrigatório não informado"));
+        return ResponseEntity.badRequest().body(
+                new ErroValidacaoResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Dados obrigatórios não informados",
+                        erros,
+                        OffsetDateTime.now()
+                )
+        );
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErroValidacaoResponse> handleMissingParam(MissingServletRequestParameterException ex) {
+        List<CampoErroDTO> erros = List.of(new CampoErroDTO(ex.getParameterName(), "Parâmetro obrigatório não informado"));
+        return ResponseEntity.badRequest().body(
+                new ErroValidacaoResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Parâmetros obrigatórios não informados",
+                        erros,
+                        OffsetDateTime.now()
+                )
+        );
     }
 }

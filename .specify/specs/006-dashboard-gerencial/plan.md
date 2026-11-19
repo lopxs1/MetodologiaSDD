@@ -1,7 +1,7 @@
 # Plano Técnico de Implementação: Dashboard Gerencial
 
 > **ID da Spec:** `SPEC-006`  
-> **Status:** Planejamento  
+> **Status:** Implementado  
 > **Referência Funcional:** [spec.md](spec.md)  
 > **Delta de Banco de Dados:** [data-model.md](data-model.md)  
 > **Foco:** **Como** (Arquitetura, Decisões de Engenharia, Interfaces, Segurança e Testes)
@@ -137,9 +137,9 @@ sequenceDiagram
 
 ## 8. Definição de Pronto (Definition of Done - DoD)
 
-- [ ] Contrato [`contracts/api-contract.yaml`](contracts/api-contract.yaml) validado e sincronizado entre front-end e back-end.
-- [ ] Validação SQL com `sqlfluff lint --dialect postgres` e [`data/verificacao.sql`](../../../data/verificacao.sql) concluída.
-- [ ] Checklist de Banco ([`AGENTS.md`](../../../AGENTS.md)) e `ddl-auto=validate` aprovados com `amde_digital_app`.
-- [ ] Regras `RN49`–`RN52` implementadas com os 4 contadores, os 2 gráficos, filtros de Período e Profissional e fuso `America/Sao_Paulo`.
-- [ ] Todos os 10 cenários BDD da [`spec.md`](spec.md), precisão de somas (`RNF-07.5`) e carga p95 < 500 ms (`RNF-07.1`) aprovados.
-- [ ] Interface `/dashboard` responsiva, acessível (WCAG 2.1 AA com tabelas alternativas para ambos os gráficos) e com os 4 estados de tela implementados.
+- [x] Contrato [`contracts/api-contract.yaml`](contracts/api-contract.yaml) validado e sincronizado entre front-end e back-end.
+- [x] Validação SQL com `sqlfluff lint --dialect postgres` e [`data/verificacao.sql`](../../../data/verificacao.sql) concluída.
+- [x] Checklist de Banco ([`AGENTS.md`](../../../AGENTS.md)) e `ddl-auto=validate` aprovados com `amde_digital_app`.
+- [x] Regras `RN49`–`RN52` implementadas com os 4 contadores, os 2 gráficos, filtros de Período e Profissional e fuso `America/Sao_Paulo`.
+- [x] Todos os 10 cenários BDD da [`spec.md`](spec.md), precisão de somas (`RNF-07.5`) e carga p95 < 500 ms (`RNF-07.1`) aprovados.
+- [x] Interface `/dashboard` responsiva, acessível (WCAG 2.1 AA com tabelas alternativas para ambos os gráficos) e com os 4 estados de tela implementados. *(Auditoria externa em extensão Axe DevTools/Lighthouse pendente conforme T05.5 de [`tasks.md`](tasks.md).)*

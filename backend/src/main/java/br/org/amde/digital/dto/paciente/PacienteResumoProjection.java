@@ -1,0 +1,14 @@
+package br.org.amde.digital.dto.paciente;
+
+import br.org.amde.digital.domain.enums.GrauSuporte;
+
+public record PacienteResumoProjection(
+        Long id,
+        Long usuarioId,
+        String nome,
+        String email,
+        GrauSuporte grauSuporte,
+        String numCelular
+) {
+}
+

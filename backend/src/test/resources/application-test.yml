@@ -20,8 +20,14 @@ spring:
     password: ${TEST_DB_OWNER_PASSWORD:CHANGE_ME_OWNER_PASSWORD}
     default-schema: amde_digital
     liquibase-schema: amde_digital
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
 
 amde:
+  storage:
+    upload-dir: target/test-uploads/prontuarios
   security:
     jwt:
       secret: chave-ficticia-local-com-no-minimo-256-bits-para-desenvolvimento-sdd

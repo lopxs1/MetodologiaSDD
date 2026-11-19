@@ -1,7 +1,7 @@
 # Checklist de Tarefas: Auditoria e Segurança
 
 > **ID da Spec:** `SPEC-005`  
-> **Status Geral:** `18 / 27 Concluídas (validação em runtime pendente de Docker/PostgreSQL)`  
+> **Status Geral:** `21 / 27 Concluídas (T02.2, T02.3 e T06.2 validadas no PostgreSQL 18; testes de integração/carga pendentes)`  
 > **Responsáveis:** Gustavo Ferreira Lopes, Helena Melchiades de Faria, Kaiky Saquette Pereira, Vinicius Firmino Oliveira de Souza  
 > **Origem dos Requisitos:** [spec.md](spec.md) | **Plano Técnico:** [plan.md](plan.md) | **Modelo de Dados:** [data-model.md](data-model.md) | **Contratos:** [contracts/api-contract.yaml](contracts/api-contract.yaml)
 
@@ -16,8 +16,8 @@
 
 ## 💾 Fase 2: Banco de Dados, Imutabilidade e Seeds Sintéticos
 - [x] **T02.1:** Confirmar que `log_auditoria` em [`001_esquema_inicial.sql`](../../../backend/src/main/resources/db/changelog/migrations/001_esquema_inicial.sql) segue o padrão *append-only* (`ck_log_auditoria_*`, índices `ix_log_auditoria_usuario` e `ix_log_auditoria_criado_em`, sem `atualizado_em`, `excluido_em` nem triggers).
-- [ ] **T02.2:** Validar scripts SQL executando `sqlfluff lint --dialect postgres`.
-- [ ] **T02.3:** Executar [`data/verificacao.sql`](../../../data/verificacao.sql) confirmando **zero linhas** nas 9 consultas estruturais (incluindo a exceção de `log_auditoria` na consulta nº 9) e conferir `[LGPD: pessoal]` em `ip_origem`.
+- [x] **T02.2:** Validar scripts SQL executando `sqlfluff lint --dialect postgres`.
+- [x] **T02.3:** Executar [`data/verificacao.sql`](../../../data/verificacao.sql) confirmando **zero linhas** nas 9 consultas estruturais (incluindo a exceção de `log_auditoria` na consulta nº 9) e conferir `[LGPD: pessoal]` em `ip_origem`.
 - [x] **T02.4:** Criar seed sintético (`data/seeds/005_auditoria_seed_sintetico.sql`) com eventos das 5 ações e caso com `ip_origem` nulo (rotina interna).
 
 ---
@@ -35,7 +35,7 @@
 ---
 
 ## 🔗 Fase 4: Integração Transversal e Procedimento de Apuração
-- [x] **T04.1:** Integrar `AuditoriaService` aos pontos de disparo de `SPEC-001` (`LOGIN` e `EXCLUSAO` de usuário), `SPEC-003` (`UPLOAD`, `DOWNLOAD` e `EXCLUSAO` síncrona prévia de documento) e `SPEC-004` (`AGENDAMENTO`). *(SPEC-001 integrado no Incremento 1; SPEC-003 e SPEC-004 serão integrados nos Incrementos 2 e 3.)*
+- [x] **T04.1:** Integrar `AuditoriaService` aos pontos de disparo de `SPEC-001` (`LOGIN` e `EXCLUSAO` de usuário), `SPEC-003` (`UPLOAD`, `DOWNLOAD` e `EXCLUSAO` síncrona prévia de documento) e `SPEC-004` (`AGENDAMENTO`). *(SPEC-001, SPEC-003 e SPEC-004 integrados e verificados.)*
 - [x] **T04.2:** Configurar o perfil de `trusted-proxies` em `application.yml` sem expor segredos no repositório.
 - [x] **T04.3:** Documentar o procedimento operacional controlado de consulta SQL fora da aplicação com `SET TIME ZONE 'America/Sao_Paulo'` (`Seção 5` do [`plan.md`](plan.md)).
 
@@ -53,5 +53,5 @@
 
 ## 🏁 Fase 6: Conclusão e Revisão
 - [x] **T06.1:** Confirmar alinhamento entre código implementado, [`contracts/api-contract.yaml`](contracts/api-contract.yaml), [`data-model.md`](data-model.md) e [`.specify/memory/domain-model.md`](../../memory/domain-model.md).
-- [ ] **T06.2:** Validar `ddl-auto=validate` (`@Immutable` em `LogAuditoria`) e Checklist de Banco ([`AGENTS.md`](../../../AGENTS.md)).
+- [x] **T06.2:** Validar `ddl-auto=validate` (`@Immutable` em `LogAuditoria`) e Checklist de Banco ([`AGENTS.md`](../../../AGENTS.md)).
 - [ ] **T06.3:** Realizar Code Review final, validar todos os itens da *Definition of Done* em [`plan.md`](plan.md) e atualizar o status da `SPEC-005` para `Implementado`.
