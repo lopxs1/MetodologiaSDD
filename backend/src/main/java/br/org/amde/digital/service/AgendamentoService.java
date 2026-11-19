@@ -23,6 +23,8 @@ import br.org.amde.digital.exception.ValidacaoCampoException;
 import br.org.amde.digital.exception.ValidacaoCampoException.CampoErro;
 import br.org.amde.digital.repository.AgendamentoPacienteRepository;
 import br.org.amde.digital.repository.AgendamentoRepository;
+import br.org.amde.digital.repository.AgendamentoRepository.AgendamentoCabecalhoProjection;
+import br.org.amde.digital.repository.AgendamentoRepository.AgendamentoParticipanteProjection;
 import br.org.amde.digital.repository.FuncionarioRepository;
 import br.org.amde.digital.repository.PacienteRepository;
 import br.org.amde.digital.security.UsuarioAutenticado;
@@ -44,7 +46,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -65,6 +69,7 @@ public class AgendamentoService {
     private static final int TAMANHO_PAGINA_MAXIMO = 50;
     private static final int TAMANHO_TERMO_MAXIMO = 100;
     private static final Set<String> CAMPOS_ORDENACAO = Set.of("dataInicio", "dataFim", "status", "tipoAgendamento");
+    private static final ZoneId SP_ZONE = ZoneId.of("America/Sao_Paulo");
 
     private final AgendamentoRepository agendamentoRepository;
     private final AgendamentoPacienteRepository agendamentoPacienteRepository;
@@ -83,8 +88,7 @@ public class AgendamentoService {
         if (funcionario.getUsuario().getNivelAcesso() != NivelAcesso.MEDICO) {
             throw new ValidacaoCampoException(
                     "funcionarioId",
-                    "O funcionário informado não possui perfil clínico habilitado para agenda"
-            );
+                    "O funcionário informado não possui perfil clínico habilitado para agenda");
         }
 
         List<Paciente> pacientes = carregarPacientesAtivos(request.pacientesIds());
@@ -119,8 +123,7 @@ public class AgendamentoService {
         auditoriaService.registrarAsync(
                 autenticado.id(),
                 AcaoAuditoria.AGENDAMENTO,
-                recursoFormatter.formatarAgendamento(salvo.getId(), "CRIAR")
-        );
+                recursoFormatter.formatarAgendamento(salvo.getId(), "CRIAR"));
 
         return toResponse(salvo, null);
     }
@@ -137,8 +140,7 @@ public class AgendamentoService {
             int size,
             String sort,
             String direction,
-            UsuarioAutenticado autenticado
-    ) {
+            UsuarioAutenticado autenticado) {
         List<CampoErro> erros = new ArrayList<>();
         String padraoLike = normalizarPadraoBusca(termo, erros);
 
@@ -187,8 +189,7 @@ public class AgendamentoService {
                 sub.select(cb.literal(1L));
                 sub.where(
                         cb.equal(apRoot.get("agendamento"), root),
-                        cb.equal(apRoot.get("paciente").get("id"), filtroPacienteId)
-                );
+                        cb.equal(apRoot.get("paciente").get("id"), filtroPacienteId));
                 predicates.add(cb.exists(sub));
             }
             if (dataInicio != null) {
@@ -209,8 +210,7 @@ public class AgendamentoService {
                 Expression<String> nomeProfExpr = cb.function(
                         "public.unaccent",
                         String.class,
-                        cb.lower(funcUserJoin.get("nome"))
-                );
+                        cb.lower(funcUserJoin.get("nome")));
                 Predicate matchProf = cb.like(nomeProfExpr, padraoLike, '!');
 
                 Subquery<Long> subPac = query.subquery(Long.class);
@@ -220,8 +220,7 @@ public class AgendamentoService {
                 Expression<String> nomePacExpr = cb.function(
                         "public.unaccent",
                         String.class,
-                        cb.lower(pacUserJoin.get("nome"))
-                );
+                        cb.lower(pacUserJoin.get("nome")));
                 List<Predicate> subPreds = new ArrayList<>();
                 subPreds.add(cb.equal(apSub.get("agendamento"), root));
                 if (filtroPacienteId != null) {
@@ -240,34 +239,32 @@ public class AgendamentoService {
         Pageable pageable = PageRequest.of(
                 page,
                 tamanhoEfetivo,
-                Sort.by(sortDirection, campoSort).and(Sort.by(Sort.Direction.ASC, "id"))
-        );
+                Sort.by(sortDirection, campoSort).and(Sort.by(Sort.Direction.ASC, "id")));
 
         Page<Agendamento> paginaResultado = agendamentoRepository.findAll(spec, pageable);
         List<Long> ids = paginaResultado.getContent().stream().map(Agendamento::getId).toList();
-        Map<Long, Agendamento> detalhesPorId = ids.isEmpty()
-                ? Map.of()
-                : agendamentoRepository.findAllByIdInComDetalhes(ids).stream()
-                        .collect(Collectors.toMap(Agendamento::getId, Function.identity()));
-
-        List<AgendamentoResponse> itens = paginaResultado.getContent().stream()
-                .map(a -> toResponse(detalhesPorId.getOrDefault(a.getId(), a), filtroPacienteId))
-                .toList();
+        List<AgendamentoResponse> itens = montarResponsesOrdenados(ids, filtroPacienteId);
 
         return new ListaAgendamentosResponse(
                 itens,
                 paginaResultado.getNumber(),
                 paginaResultado.getSize(),
                 paginaResultado.getTotalElements(),
-                paginaResultado.getTotalPages()
-        );
+                paginaResultado.getTotalPages());
     }
 
     @Transactional(readOnly = true)
     public AgendamentoResponse consultarPorId(Long id, UsuarioAutenticado autenticado) {
-        Agendamento agendamento = buscarAgendamentoComDetalhes(id);
-        Long pacienteEscopoId = validarAcessoLeitura(agendamento, autenticado);
-        return toResponse(agendamento, pacienteEscopoId);
+        if (id == null || id <= 0) {
+            throw new ValidacaoCampoException("id", "Identificador do agendamento inválido");
+        }
+        AgendamentoCabecalhoProjection cabecalho = agendamentoRepository.findCabecalhosByIdIn(List.of(id)).stream()
+                .findFirst()
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento não encontrado"));
+        List<AgendamentoParticipanteProjection> participantes = agendamentoRepository
+                .findParticipantesByAgendamentoIdIn(List.of(id));
+        Long pacienteEscopoId = validarAcessoLeitura(cabecalho.getFuncionarioId(), participantes, autenticado);
+        return toResponse(cabecalho, participantes, pacienteEscopoId);
     }
 
     @Transactional
@@ -282,14 +279,14 @@ public class AgendamentoService {
                 && !request.funcionarioId().equals(agendamento.getFuncionario().getId())) {
             throw new ValidacaoCampoException(
                     "funcionarioId",
-                    "Não é permitido alterar o profissional responsável na edição"
-            );
+                    "Não é permitido alterar o profissional responsável na edição");
         }
 
         validarDadosBasicosSessao(request.dataInicio(), request.dataFim(), request.pacientesIds());
 
         Funcionario funcionario = funcionarioRepository.findAtivoByIdForUpdate(agendamento.getFuncionario().getId())
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Profissional responsável não encontrado ou inativo"));
+                .orElseThrow(
+                        () -> new RecursoNaoEncontradoException("Profissional responsável não encontrado ou inativo"));
 
         List<Paciente> novosPacientes = carregarPacientesAtivos(request.pacientesIds());
 
@@ -337,8 +334,7 @@ public class AgendamentoService {
         auditoriaService.registrarAsync(
                 autenticado.id(),
                 AcaoAuditoria.AGENDAMENTO,
-                recursoFormatter.formatarAgendamento(salvo.getId(), "EDITAR")
-        );
+                recursoFormatter.formatarAgendamento(salvo.getId(), "EDITAR"));
 
         return toResponse(salvo, null);
     }
@@ -358,16 +354,14 @@ public class AgendamentoService {
         auditoriaService.registrarAsync(
                 autenticado.id(),
                 AcaoAuditoria.AGENDAMENTO,
-                recursoFormatter.formatarAgendamento(agendamento.getId(), "CANCELAR")
-        );
+                recursoFormatter.formatarAgendamento(agendamento.getId(), "CANCELAR"));
     }
 
     @Transactional
     public AgendamentoResponse registrarPresenca(
             Long id,
             RegistrarPresencaRequest request,
-            UsuarioAutenticado autenticado
-    ) {
+            UsuarioAutenticado autenticado) {
         Agendamento agendamento = buscarAgendamentoComDetalhes(id);
         validarAcessoEscritaAgenda(agendamento, autenticado);
 
@@ -392,8 +386,7 @@ public class AgendamentoService {
                 } else if (!porPacienteId.containsKey(item.pacienteId())) {
                     erros.add(new CampoErro(
                             "pacientes",
-                            "Paciente " + item.pacienteId() + " não pertence a este agendamento"
-                    ));
+                            "Paciente " + item.pacienteId() + " não pertence a este agendamento"));
                 } else {
                     atualizacoes.put(item.pacienteId(), item.possuiPresenca());
                 }
@@ -414,8 +407,7 @@ public class AgendamentoService {
         auditoriaService.registrarAsync(
                 autenticado.id(),
                 AcaoAuditoria.AGENDAMENTO,
-                recursoFormatter.formatarAgendamento(salvo.getId(), "PRESENCA")
-        );
+                recursoFormatter.formatarAgendamento(salvo.getId(), "PRESENCA"));
 
         return toResponse(salvo, null);
     }
@@ -438,8 +430,7 @@ public class AgendamentoService {
         auditoriaService.registrarAsync(
                 autenticado.id(),
                 AcaoAuditoria.AGENDAMENTO,
-                recursoFormatter.formatarAgendamento(salvo.getId(), "CONCLUIR")
-        );
+                recursoFormatter.formatarAgendamento(salvo.getId(), "CONCLUIR"));
 
         return toResponse(salvo, null);
     }
@@ -483,27 +474,54 @@ public class AgendamentoService {
         throw new AccessDeniedException("Perfil sem permissão para operar agendamentos");
     }
 
-    private Long validarAcessoLeitura(Agendamento agendamento, UsuarioAutenticado autenticado) {
+    private Long validarAcessoLeitura(
+            Long funcionarioId,
+            List<AgendamentoParticipanteProjection> participantes,
+            UsuarioAutenticado autenticado) {
         if (autenticado.nivelAcesso() == NivelAcesso.ADMINISTRADOR) {
             return null;
         }
         if (autenticado.nivelAcesso() == NivelAcesso.MEDICO) {
             Funcionario meuFuncionario = resolverMeuFuncionario(autenticado.id());
-            if (!agendamento.getFuncionario().getId().equals(meuFuncionario.getId())) {
+            if (!funcionarioId.equals(meuFuncionario.getId())) {
                 throw new AccessDeniedException("Acesso negado a agendamento de outro profissional");
             }
             return null;
         }
         if (autenticado.nivelAcesso() == NivelAcesso.PACIENTE) {
             Paciente meuPaciente = resolverMeuPaciente(autenticado.id());
-            boolean participa = agendamento.getPacientes().stream()
-                    .anyMatch(ap -> ap.getPaciente().getId().equals(meuPaciente.getId()));
+            boolean participa = participantes.stream()
+                    .anyMatch(ap -> ap.getPacienteId().equals(meuPaciente.getId()));
             if (!participa) {
                 throw new AccessDeniedException("Acesso negado a agendamento de terceiros");
             }
             return meuPaciente.getId();
         }
         throw new AccessDeniedException("Perfil não autorizado");
+    }
+
+    private List<AgendamentoResponse> montarResponsesOrdenados(List<Long> idsOrdenados, Long pacienteEscopoLgpdId) {
+        if (idsOrdenados.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, AgendamentoCabecalhoProjection> cabecalhosPorId = agendamentoRepository
+                .findCabecalhosByIdIn(idsOrdenados).stream()
+                .collect(Collectors.toMap(AgendamentoCabecalhoProjection::getId, Function.identity()));
+        Map<Long, List<AgendamentoParticipanteProjection>> participantesPorAgendamento = agendamentoRepository
+                .findParticipantesByAgendamentoIdIn(idsOrdenados).stream()
+                .collect(Collectors.groupingBy(AgendamentoParticipanteProjection::getAgendamentoId));
+
+        List<AgendamentoResponse> itens = new ArrayList<>(idsOrdenados.size());
+        for (Long id : idsOrdenados) {
+            AgendamentoCabecalhoProjection cabecalho = cabecalhosPorId.get(id);
+            if (cabecalho != null) {
+                itens.add(toResponse(
+                        cabecalho,
+                        participantesPorAgendamento.getOrDefault(id, List.of()),
+                        pacienteEscopoLgpdId));
+            }
+        }
+        return itens;
     }
 
     private Funcionario resolverMeuFuncionario(Long usuarioId) {
@@ -519,8 +537,7 @@ public class AgendamentoService {
     private void validarDadosBasicosSessao(
             OffsetDateTime dataInicio,
             OffsetDateTime dataFim,
-            List<Long> pacientesIds
-    ) {
+            List<Long> pacientesIds) {
         List<CampoErro> erros = new ArrayList<>();
         if (dataInicio == null) {
             erros.add(new CampoErro("dataInicio", "A data de início é obrigatória"));
@@ -562,16 +579,49 @@ public class AgendamentoService {
         return pacientes;
     }
 
+    private AgendamentoResponse toResponse(
+            AgendamentoCabecalhoProjection cabecalho,
+            List<AgendamentoParticipanteProjection> participantes,
+            Long pacienteEscopoLgpdId) {
+        List<AgendamentoPacienteDTO> pacientesDto = participantes.stream()
+                .filter(ap -> pacienteEscopoLgpdId == null || ap.getPacienteId().equals(pacienteEscopoLgpdId))
+                .sorted(Comparator.comparing(AgendamentoParticipanteProjection::getNomePaciente,
+                        String.CASE_INSENSITIVE_ORDER))
+                .map(ap -> new AgendamentoPacienteDTO(
+                        ap.getPacienteId(),
+                        ap.getNomePaciente(),
+                        Boolean.TRUE.equals(ap.getPossuiPresenca())))
+                .toList();
+
+        return new AgendamentoResponse(
+                cabecalho.getId(),
+                cabecalho.getFuncionarioId(),
+                cabecalho.getNomeProfissional(),
+                cabecalho.getCargoProfissional(),
+                toOffsetSp(cabecalho.getDataInicio()),
+                toOffsetSp(cabecalho.getDataFim()),
+                TipoAgendamento.valueOf(cabecalho.getTipoAgendamento()),
+                StatusAgendamento.valueOf(cabecalho.getStatus()),
+                Boolean.TRUE.equals(cabecalho.getPossuiPresencaFuncionario()),
+                pacientesDto,
+                toOffsetSp(cabecalho.getCriadoEm()),
+                toOffsetSp(cabecalho.getAtualizadoEm()));
+    }
+
+    private OffsetDateTime toOffsetSp(Instant instant) {
+        return instant == null ? null : OffsetDateTime.ofInstant(instant, SP_ZONE);
+    }
+
     private AgendamentoResponse toResponse(Agendamento agendamento, Long pacienteEscopoLgpdId) {
         Funcionario func = agendamento.getFuncionario();
         List<AgendamentoPacienteDTO> pacientesDto = agendamento.getPacientes().stream()
                 .filter(ap -> pacienteEscopoLgpdId == null || ap.getPaciente().getId().equals(pacienteEscopoLgpdId))
-                .sorted(Comparator.comparing(ap -> ap.getPaciente().getUsuario().getNome(), String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(ap -> ap.getPaciente().getUsuario().getNome(),
+                        String.CASE_INSENSITIVE_ORDER))
                 .map(ap -> new AgendamentoPacienteDTO(
                         ap.getPaciente().getId(),
                         ap.getPaciente().getUsuario().getNome(),
-                        Boolean.TRUE.equals(ap.getPossuiPresenca())
-                ))
+                        Boolean.TRUE.equals(ap.getPossuiPresenca())))
                 .toList();
 
         return new AgendamentoResponse(
@@ -586,8 +636,7 @@ public class AgendamentoService {
                 Boolean.TRUE.equals(agendamento.getPossuiPresencaFuncionario()),
                 pacientesDto,
                 agendamento.getCriadoEm(),
-                agendamento.getAtualizadoEm()
-        );
+                agendamento.getAtualizadoEm());
     }
 
     private String normalizarPadraoBusca(String termo, List<CampoErro> erros) {
@@ -621,4 +670,3 @@ public class AgendamentoService {
         }
     }
 }
-

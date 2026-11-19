@@ -21,6 +21,8 @@ import br.org.amde.digital.exception.RecursoNaoEncontradoException;
 import br.org.amde.digital.exception.ValidacaoCampoException;
 import br.org.amde.digital.repository.AgendamentoPacienteRepository;
 import br.org.amde.digital.repository.AgendamentoRepository;
+import br.org.amde.digital.repository.AgendamentoRepository.AgendamentoCabecalhoProjection;
+import br.org.amde.digital.repository.AgendamentoRepository.AgendamentoParticipanteProjection;
 import br.org.amde.digital.repository.FuncionarioRepository;
 import br.org.amde.digital.repository.PacienteRepository;
 import br.org.amde.digital.security.UsuarioAutenticado;
@@ -34,6 +36,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -268,23 +271,25 @@ class AgendamentoServiceTest {
     @Test
     void deveAplicarMinimizacaoLgpdParaPacienteEmSessaoEmGrupo() {
         UsuarioAutenticado pacienteAuth = new UsuarioAutenticado(21L, "Beatriz", "bea@amde.org.br", NivelAcesso.PACIENTE);
-        Funcionario func = criarFuncionario(3L, 10L, "Dra. Ana", "Psicologia", NivelAcesso.MEDICO);
         Paciente p1 = criarPaciente(11L, 21L, "Beatriz");
-        Paciente p2 = criarPaciente(12L, 22L, "Carlos");
-        Paciente p3 = criarPaciente(13L, 23L, "Terceiro");
 
-        Agendamento grupo = criarAgendamento(
-                60L, func, OffsetDateTime.now().plusDays(1), OffsetDateTime.now().plusDays(1).plusHours(1),
-                StatusAgendamento.AGENDADO, List.of(p1, p2), false
+        Instant agora = Instant.now();
+        AgendamentoCabecalhoProjection cabGrupo = criarCabecalhoProj(60L, 3L, "Dra. Ana", "Psicologia", agora);
+        AgendamentoCabecalhoProjection cabTerceiro = criarCabecalhoProj(61L, 3L, "Dra. Ana", "Psicologia", agora);
+
+        List<AgendamentoParticipanteProjection> partGrupo = List.of(
+                criarParticipanteProj(60L, 11L, "Beatriz", false),
+                criarParticipanteProj(60L, 12L, "Carlos", false)
         );
-        Agendamento deTerceiro = criarAgendamento(
-                61L, func, OffsetDateTime.now().plusDays(2), OffsetDateTime.now().plusDays(2).plusHours(1),
-                StatusAgendamento.AGENDADO, List.of(p3), false
+        List<AgendamentoParticipanteProjection> partTerceiro = List.of(
+                criarParticipanteProj(61L, 13L, "Terceiro", false)
         );
 
         when(pacienteRepository.findAtivoByUsuarioIdComUsuario(21L)).thenReturn(Optional.of(p1));
-        when(agendamentoRepository.findByIdComDetalhes(60L)).thenReturn(Optional.of(grupo));
-        when(agendamentoRepository.findByIdComDetalhes(61L)).thenReturn(Optional.of(deTerceiro));
+        when(agendamentoRepository.findCabecalhosByIdIn(List.of(60L))).thenReturn(List.of(cabGrupo));
+        when(agendamentoRepository.findParticipantesByAgendamentoIdIn(List.of(60L))).thenReturn(partGrupo);
+        when(agendamentoRepository.findCabecalhosByIdIn(List.of(61L))).thenReturn(List.of(cabTerceiro));
+        when(agendamentoRepository.findParticipantesByAgendamentoIdIn(List.of(61L))).thenReturn(partTerceiro);
 
         AgendamentoResponse resposta = agendamentoService.consultarPorId(60L, pacienteAuth);
         assertThat(resposta.pacientes()).hasSize(1);
@@ -363,6 +368,100 @@ class AgendamentoServiceTest {
             ag.getPacientes().add(ap);
         }
         return ag;
+    }
+
+    private AgendamentoCabecalhoProjection criarCabecalhoProj(
+            Long id,
+            Long funcionarioId,
+            String nomeProfissional,
+            String cargoProfissional,
+            Instant ref
+    ) {
+        return new AgendamentoCabecalhoProjection() {
+            @Override
+            public Long getId() {
+                return id;
+            }
+
+            @Override
+            public Long getFuncionarioId() {
+                return funcionarioId;
+            }
+
+            @Override
+            public String getNomeProfissional() {
+                return nomeProfissional;
+            }
+
+            @Override
+            public String getCargoProfissional() {
+                return cargoProfissional;
+            }
+
+            @Override
+            public Instant getDataInicio() {
+                return ref.plusSeconds(3600);
+            }
+
+            @Override
+            public Instant getDataFim() {
+                return ref.plusSeconds(7200);
+            }
+
+            @Override
+            public String getTipoAgendamento() {
+                return TipoAgendamento.TERAPIA.name();
+            }
+
+            @Override
+            public String getStatus() {
+                return StatusAgendamento.AGENDADO.name();
+            }
+
+            @Override
+            public Boolean getPossuiPresencaFuncionario() {
+                return false;
+            }
+
+            @Override
+            public Instant getCriadoEm() {
+                return ref;
+            }
+
+            @Override
+            public Instant getAtualizadoEm() {
+                return ref;
+            }
+        };
+    }
+
+    private AgendamentoParticipanteProjection criarParticipanteProj(
+            Long agendamentoId,
+            Long pacienteId,
+            String nomePaciente,
+            Boolean possuiPresenca
+    ) {
+        return new AgendamentoParticipanteProjection() {
+            @Override
+            public Long getAgendamentoId() {
+                return agendamentoId;
+            }
+
+            @Override
+            public Long getPacienteId() {
+                return pacienteId;
+            }
+
+            @Override
+            public String getNomePaciente() {
+                return nomePaciente;
+            }
+
+            @Override
+            public Boolean getPossuiPresenca() {
+                return possuiPresenca;
+            }
+        };
     }
 }
 

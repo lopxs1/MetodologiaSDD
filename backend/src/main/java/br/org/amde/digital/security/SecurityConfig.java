@@ -2,6 +2,7 @@ package br.org.amde.digital.security;
 
 import br.org.amde.digital.dto.erro.ErroResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +32,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Configuracao de seguranca stateless JWT, BCrypt (RN01) e RBAC por perfil (RN17).
+ * Configuracao de seguranca stateless JWT, BCrypt (RN01) e RBAC por perfil
+ * (RN17).
  */
 @Configuration
 @EnableWebSecurity
@@ -52,18 +54,17 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
-                        .contentTypeOptions(opt -> {})
-                        .frameOptions(frame -> frame.deny())
-                )
+                        .contentTypeOptions(opt -> {
+                        })
+                        .frameOptions(frame -> frame.deny()))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint())
-                        .accessDeniedHandler(accessDeniedHandler())
-                )
+                        .accessDeniedHandler(accessDeniedHandler()))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -75,14 +76,14 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
-        return (request, response, authException) ->
-                escreverErroJson(response, HttpStatus.UNAUTHORIZED, "Sessão ausente, expirada ou inválida");
+        return (request, response, authException) -> escreverErroJson(response, HttpStatus.UNAUTHORIZED,
+                "Sessão ausente, expirada ou inválida");
     }
 
     @Bean
     public AccessDeniedHandler accessDeniedHandler() {
-        return (request, response, accessDeniedException) ->
-                escreverErroJson(response, HttpStatus.FORBIDDEN, "Acesso negado para o perfil autenticado");
+        return (request, response, accessDeniedException) -> escreverErroJson(response, HttpStatus.FORBIDDEN,
+                "Acesso negado para o perfil autenticado");
     }
 
     @Bean

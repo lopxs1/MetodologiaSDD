@@ -3,6 +3,7 @@ package br.org.amde.digital.exception;
 import br.org.amde.digital.dto.erro.CampoErroDTO;
 import br.org.amde.digital.dto.erro.ErroResponse;
 import br.org.amde.digital.dto.erro.ErroValidacaoResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import java.time.OffsetDateTime;
 import java.util.List;
 
+@Slf4j
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
@@ -156,5 +158,16 @@ public class ApiExceptionHandler {
                         OffsetDateTime.now()
                 )
         );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErroResponse> handleErroInesperado(Exception ex) {
+        log.error("Erro interno inesperado ao processar requisicao [excecao={}]", ex.getClass().getSimpleName());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErroResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Ocorreu um erro interno ao processar a solicitação",
+                        OffsetDateTime.now()
+                ));
     }
 }

@@ -423,6 +423,57 @@ class AgendamentoIntegrationTest {
         }
     }
 
+    @Test
+    void deveListarEConsultarAgendamentoHistoricoComProfissionalEPacienteInativadosComoAdmin() throws Exception {
+        OffsetDateTime inicio = OffsetDateTime.now().minusDays(2);
+        Agendamento ag = new Agendamento();
+        ag.setFuncionario(funcionarioB);
+        ag.setDataInicio(inicio);
+        ag.setDataFim(inicio.plusMinutes(45));
+        ag.setTipoAgendamento(TipoAgendamento.CONSULTA);
+        ag.setStatus(StatusAgendamento.CONCLUIDO);
+        ag.setPossuiPresencaFuncionario(true);
+        Agendamento salvo = agendamentoRepository.saveAndFlush(ag);
+
+        AgendamentoPaciente ap = new AgendamentoPaciente();
+        ap.setId(new AgendamentoPacienteId(salvo.getId(), pacienteB.getId()));
+        ap.setAgendamento(salvo);
+        ap.setPaciente(pacienteB);
+        ap.setPossuiPresenca(true);
+        agendamentoPacienteRepository.saveAndFlush(ap);
+
+        OffsetDateTime agora = OffsetDateTime.now();
+        jdbcTemplate.update("UPDATE amde_digital.funcionario SET excluido_em = ? WHERE id = ?", agora, funcionarioB.getId());
+        jdbcTemplate.update("UPDATE amde_digital.usuario SET excluido_em = ? WHERE id = ?", agora, medicoBUser.getId());
+        jdbcTemplate.update("UPDATE amde_digital.paciente SET excluido_em = ? WHERE id = ?", agora, pacienteB.getId());
+        jdbcTemplate.update("UPDATE amde_digital.usuario SET excluido_em = ? WHERE id = ?", agora, pacienteB.getUsuario().getId());
+
+        mockMvc.perform(get("/api/agendamentos")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "dataInicio")
+                        .param("direction", "ASC")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itens").isArray());
+
+        mockMvc.perform(get("/api/agendamentos")
+                        .param("funcionarioId", funcionarioB.getId().toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itens", hasSize(1)))
+                .andExpect(jsonPath("$.itens[0].id").value(salvo.getId()))
+                .andExpect(jsonPath("$.itens[0].nomeProfissional").value(medicoBUser.getNome()))
+                .andExpect(jsonPath("$.itens[0].pacientes[0].nomePaciente").value(pacienteB.getUsuario().getNome()));
+
+        mockMvc.perform(get("/api/agendamentos/" + salvo.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(salvo.getId()))
+                .andExpect(jsonPath("$.nomeProfissional").value(medicoBUser.getNome()))
+                .andExpect(jsonPath("$.pacientes[0].nomePaciente").value(pacienteB.getUsuario().getNome()));
+    }
+
     private Callable<Integer> criarChamadaConcorrente(CountDownLatch largada, String payload) {
         return () -> {
             largada.await();
