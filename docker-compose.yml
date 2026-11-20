@@ -1,0 +1,41 @@
+# Orquestração de Infraestrutura Local — AMDE Digital
+# SEGURANÇA: nunca versione senhas reais. Copie backend/.env.example ou defina um .env na raiz (ignorado pelo Git).
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: amde-digital-postgres
+    restart: unless-stopped
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        if ! locale -a | grep -qiE '^pt_BR\.utf-?8$$'; then
+          localedef -i pt_BR -c -f UTF-8 -A /usr/share/locale/locale.alias pt_BR.UTF-8
+        fi
+        exec docker-entrypoint.sh "$$@"
+      - _
+    command: ["postgres"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_POSTGRES_PASSWORD}
+      # Mantém 'postgres' na inicialização para permitir CREATE DATABASE amde_digital no 00_bootstrap.sql
+      POSTGRES_DB: postgres
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:-CHANGE_ME_OWNER_PASSWORD}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME_APP_PASSWORD}
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./data/00_bootstrap.sql:/docker-entrypoint-initdb.d/00_bootstrap.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d amde_digital"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  pgdata:

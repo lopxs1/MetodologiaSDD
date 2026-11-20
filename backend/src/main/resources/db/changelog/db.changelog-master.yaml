@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: migrations/001_esquema_inicial.sql
+      relativeToChangelogFile: true

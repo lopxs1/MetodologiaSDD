@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: AMDE Digital API — Dashboard Gerencial
+  description: >
+    Contrato formal OpenAPI 3.0.3 da SPEC-006 (RF-07 / UC21).
+    Disponibiliza exclusivamente ao perfil ADMINISTRADOR os 4 contadores gerenciais e os
+    2 gráficos analíticos (Consultas ao Longo do Tempo e Consultas por Especialidade), com
+    filtros opcionais por período e profissional no fuso horário America/Sao_Paulo.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desenvolvimento
+tags:
+  - name: Dashboard
+    description: Indicadores agregados exclusivos do Administrador (UC21)
+
+paths:
+  /api/dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Obter indicadores agregados e séries analíticas do Dashboard (UC21)
+      description: >
+        Restrito exclusivamente ao perfil ADMINISTRADOR (RN49; MEDICO e PACIENTE recebem 403 Forbidden).
+        Calcula em tempo real (RN52) no fuso America/Sao_Paulo os 4 contadores (totalConsultas,
+        consultasHoje, totalPacientes, profissionaisAtivos) e as 2 séries analíticas
+        (consultasAoLongoDoTempo e consultasPorEspecialidade), considerando apenas agendamentos
+        AGENDADO ou CONCLUIDO (RN50, RN51). Nunca expõe PII ou dados clínicos (RNF-07.4).
+      operationId: obterMetricasDashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dataInicio
+          in: query
+          required: false
+          description: Data inicial inclusiva do filtro de período (YYYY-MM-DD, no fuso America/Sao_Paulo)
+          schema:
+            type: string
+            format: date
+            example: '2026-10-19'
+        - name: dataFim
+          in: query
+          required: false
+          description: Data final inclusiva do filtro de período (YYYY-MM-DD, no fuso America/Sao_Paulo; deve ser >= dataInicio)
+          schema:
+            type: string
+            format: date
+            example: '2026-11-18'
+        - name: funcionarioId
+          in: query
+          required: false
+          description: Identificador opcional de um profissional específico para filtrar as consultas
+          schema:
+            type: integer
+            format: int64
+            example: 3
+      responses:
+        '200':
+          description: Indicadores e séries calculados com consistência transacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '400':
+          description: Período inválido (dataInicio posterior a dataFim) ou formato de parâmetro incorreto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroValidacaoResponse'
+        '401':
+          description: Sessão ausente, expirada, adulterada ou usuário inativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '403':
+          description: Usuário autenticado não possui perfil ADMINISTRADOR (RN49)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+        '404':
+          description: Profissional informado em funcionarioId não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    DashboardContadoresDTO:
+      type: object
+      required:
+        - totalConsultas
+        - consultasHoje
+        - totalPacientes
+        - profissionaisAtivos
+      properties:
+        totalConsultas:
+          type: integer
+          format: int64
+          description: Total de agendamentos AGENDADO ou CONCLUIDO no período e profissional filtrados (RN50)
+          example: 10
+        consultasHoje:
+          type: integer
+          format: int64
+          description: Total de agendamentos AGENDADO ou CONCLUIDO com início hoje em America/Sao_Paulo (RN50)
+          example: 3
+        totalPacientes:
+          type: integer
+          format: int64
+          description: Quantidade de pacientes ativos (excluido_em IS NULL — RN50)
+          example: 5
+        profissionaisAtivos:
+          type: integer
+          format: int64
+          description: Quantidade de profissionais ativos (excluido_em IS NULL — RN50)
+          example: 4
+
+    ConsultaDiaDTO:
+      type: object
+      required:
+        - data
+        - quantidade
+      properties:
+        data:
+          type: string
+          format: date
+          description: Data civil no fuso America/Sao_Paulo
+          example: '2026-11-18'
+        quantidade:
+          type: integer
+          format: int64
+          example: 4
+
+    ConsultaEspecialidadeDTO:
+      type: object
+      required:
+        - especialidade
+        - quantidade
+        - percentual
+      properties:
+        especialidade:
+          type: string
+          description: Rótulo normalizado de funcionario.cargo (grafia do primeiro profissional cadastrado — RN51)
+          example: Psicologia
+        quantidade:
+          type: integer
+          format: int64
+          example: 4
+        percentual:
+          type: number
+          format: double
+          description: Percentual sobre totalConsultas (0.00 a 100.00)
+          example: 40.0
+
+    DashboardResponse:
+      type: object
+      required:
+        - contadores
+        - consultasAoLongoDoTempo
+        - consultasPorEspecialidade
+      properties:
+        contadores:
+          $ref: '#/components/schemas/DashboardContadoresDTO'
+        consultasAoLongoDoTempo:
+          type: array
+          description: Evolução diária de agendamentos válidos no recorte selecionado (soma = totalConsultas — RNF-07.5)
+          items:
+            $ref: '#/components/schemas/ConsultaDiaDTO'
+        consultasPorEspecialidade:
+          type: array
+          description: Distribuição por especialidade ordenada por quantidade DESC e rótulo ASC (soma = totalConsultas — RN51, RNF-07.5)
+          items:
+            $ref: '#/components/schemas/ConsultaEspecialidadeDTO'
+
+    CampoErroDTO:
+      type: object
+      properties:
+        campo:
+          type: string
+          example: dataInicio
+        mensagem:
+          type: string
+          example: A data inicial não pode ser posterior à data final
+
+    ErroResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        mensagem:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErroValidacaoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        mensagem:
+          type: string
+          example: Parâmetros de filtro inválidos
+        erros:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoErroDTO'
+        timestamp:
+          type: string
+          format: date-time

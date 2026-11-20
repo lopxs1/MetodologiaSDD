@@ -1,7 +1,7 @@
 # Checklist de Tarefas: [Nome da Funcionalidade]
 
 > **ID da Spec:** `SPEC-XXX`  
-> **Status Geral:** `0 / 10 Concluídas`  
+> **Status Geral:** `0 / 18 Concluídas`  
 > **Responsáveis:** [Nome dos Desenvolvedores]  
 > **Origem dos Requisitos:** [spec.md](spec.md) | **Plano Técnico:** [plan.md](plan.md) | **Contratos:** [contracts/](contracts/)
 
@@ -15,9 +15,11 @@
 ---
 
 ## 💾 Fase 2: Banco de Dados e Migrações
-- [ ] **T02.1:** Implementar script de migração UP conforme `data-model.md`.
-- [ ] **T02.2:** Testar script de reversão DOWN (Rollback).
-- [ ] **T02.3:** Criar seeds sintéticos de teste.
+- [ ] **T02.1:** Implementar script de migração UP Liquibase (`--liquibase formatted sql`) conforme `data-model.md`.
+- [ ] **T02.2:** Validar formatação e regras de estilo executando `sqlfluff lint --dialect postgres`.
+- [ ] **T02.3:** Executar `data/verificacao.sql` garantindo zero linhas nas 7 consultas obrigatórias e conferindo o inventário `[LGPD: ...]`.
+- [ ] **T02.4:** Testar script de reversão DOWN (`--rollback`).
+- [ ] **T02.5:** Criar seeds sintéticos de teste em arquivo separado das migrations.
 
 ---
 
