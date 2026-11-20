@@ -16,8 +16,9 @@
   - Kaiky Saquette Pereira
   - Vinicius Firmino Oliveira de Souza
 - **Orientação:** Prof. Antonio Cesar de Barros Munari
-- **Disciplina/Etapa:** Projeto Integrador / Trabalho de Graduação — ADS
-- **Base Documental de Referência:** Monografia AMDE Digital (Dezembro/2025)
+- **Disciplina/Etapa:** Projeto Integrador / Trabalho de Graduação — ADS (Fatec Sorocaba)
+- **Monografia do Projeto (Novembro/2026):** [`docs/monografia-sdd-amde-digital-2026.pdf`](docs/monografia-sdd-amde-digital-2026.pdf) ([visão geral](docs/README.md))
+- **Base Documental de Referência:** Monografia AMDE Digital (Dezembro/2025) em [`.specify/reference/references/`](.specify/reference/references/monografia-amde-digital.pdf)
 
 ---
 
@@ -69,6 +70,9 @@ O projeto adota uma separação estrita entre a memória global, os pacotes incr
 │       ├── 005-auditoria-e-seguranca/    # SPEC-005: Trilha de auditoria assíncrona (LGPD/CFM)
 │       ├── 006-dashboard-gerencial/      # SPEC-006: Indicadores e gráficos gerenciais
 │       └── _template/                    # Template base para novas specs
+├── docs/                               # Documentação acadêmica final do projeto (Monografia SDD 2026)
+│   ├── README.md                       # Metadados e estrutura da monografia
+│   └── monografia-sdd-amde-digital-2026.pdf # Monografia completa (Novembro/2026)
 ├── AGENTS.md                           # Regras de banco PostgreSQL 18, exceções JPA/Hibernate e checklist de PR
 ├── .sqlfluff                           # Configuração de lint SQL (dialeto postgres, minúsculas)
 ├── docker-compose.yml                  # Container PostgreSQL 18 (Debian + ICU pt-BR) com bootstrap automático
@@ -81,7 +85,7 @@ O projeto adota uma separação estrita entre a memória global, os pacotes incr
 └── mobile/                             # Pasta do template original (fora de escopo; sem cliente móvel nesta entrega)
 ```
 
-Os artefatos de engenharia antes mantidos em `docs/` agora ficam centralizados em [`.specify/reference/`](.specify/reference/). Templates genéricos e exemplos fictícios foram removidos.
+Os artefatos técnicos de engenharia do fluxo SDD ficam centralizados em [`.specify/reference/`](.specify/reference/), enquanto a documentação acadêmica final deste projeto (monografia de Novembro/2026) encontra-se em [`docs/`](docs/README.md). Templates genéricos e exemplos fictícios foram removidos.
 
 ---
 
